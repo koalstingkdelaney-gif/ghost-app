@@ -7,7 +7,7 @@ import hashlib
 from urllib.parse import urlparse
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
-PORT = int(os.environ.get("PORT", 8080))
+PORT = int(os.environ.get("PORT", 8181))
 DB_FILE = "enterprise_cloud.db"
 
 def init_db():
@@ -24,9 +24,10 @@ def init_db():
         )
     ''')
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS banned_ips (
-            ip_address TEXT PRIMARY KEY,
-            reason TEXT,
+        CREATE TABLE IF NOT EXISTS activity_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT,
+            action TEXT,
             timestamp REAL
         )
     ''')
@@ -40,13 +41,13 @@ HTML_PAGE = """<!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GhostCorp Platform</title>
+    <title>GhostCorpHive Cloud Dashboard</title>
     <style>
         body { font-family: sans-serif; background: #0f172a; color: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: #1e293b; padding: 2rem; border-radius: 12px; width: 100%%; max-width: 400px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .card { background: #1e293b; padding: 2rem; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         h2 { text-align: center; color: #38bdf8; }
-        input { width: 100%%; padding: 10px; margin: 10px 0; border: 1px solid #475569; background: #0f172a; color: white; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%%; padding: 10px; background: #0284c7; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #475569; background: #0f172a; color: white; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #0284c7; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         button:hover { background: #0369a1; }
         .msg { text-align: center; margin-top: 15px; font-size: 14px; }
         .toggle { text-align: center; margin-top: 15px; color: #94a3b8; cursor: pointer; font-size: 13px; }
@@ -55,11 +56,11 @@ HTML_PAGE = """<!DOCTYPE html>
 </head>
 <body>
     <div class="card">
-        <h2 id="form-title">GhostCorp Register</h2>
+        <h2 id="form-title">👻 GhostCorpHive</h2>
         <form id="auth-form" onsubmit="handleSubmit(event)">
             <input type="text" id="username" placeholder="Username" required autocomplete="username">
             <input type="password" id="password" placeholder="Password" required autocomplete="current-password">
-            <button type="submit" id="submit-btn">Create Account (Claim Admin)</button>
+            <button type="submit" id="submit-btn">Register (Claim Admin)</button>
         </form>
         <div class="toggle" onclick="toggleMode()">Already have an account? <span>Login here</span></div>
         <div class="msg" id="msg"></div>
@@ -69,8 +70,8 @@ HTML_PAGE = """<!DOCTYPE html>
         let isLogin = false;
         function toggleMode() {
             isLogin = !isLogin;
-            document.getElementById('form-title').innerText = isLogin ? "GhostCorp Login" : "GhostCorp Register";
-            document.getElementById('submit-btn').innerText = isLogin ? "Login" : "Create Account (Claim Admin)";
+            document.getElementById('form-title').innerText = isLogin ? "GhostCorpHive Login" : "👻 GhostCorpHive";
+            document.getElementById('submit-btn').innerText = isLogin ? "Login" : "Register (Claim Admin)";
             document.querySelector('.toggle').innerHTML = isLogin ? 
                 "Don't have an account? <span>Register here</span>" : 
                 "Already have an account? <span>Login here</span>";
@@ -83,20 +84,25 @@ HTML_PAGE = """<!DOCTYPE html>
             const password = document.getElementById('password').value.trim();
             const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
 
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-            const data = await res.json();
-            const msgEl = document.getElementById('msg');
-            
-            if (res.ok) {
-                msgEl.style.color = "#4ade80";
-                msgEl.innerText = isLogin ? `Welcome back, ${data.username} (${data.role}!)` : `${data.message}`;
-            } else {
-                msgEl.style.color = "#f87171";
-                msgEl.innerText = data.error || "An error occurred.";
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                const msgEl = document.getElementById('msg');
+                
+                if (res.ok) {
+                    msgEl.style.color = "#4ade80";
+                    msgEl.innerText = isLogin ? `Welcome back, ${data.username} (${data.role.toUpperCase()}!)` : `${data.message}`;
+                } else {
+                    msgEl.style.color = "#f87171";
+                    msgEl.innerText = data.error || "An error occurred.";
+                }
+            } catch (err) {
+                document.getElementById('msg').style.color = "#f87171";
+                document.getElementById('msg').innerText = "Network connection error.";
             }
         }
     </script>
@@ -104,7 +110,7 @@ HTML_PAGE = """<!DOCTYPE html>
 </html>
 """
 
-class CloudApplicationRouter(SimpleHTTPRequestHandler):
+class GhostAppRouter(SimpleHTTPRequestHandler):
     def _send_json(self, data, status=200):
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
@@ -116,12 +122,6 @@ class CloudApplicationRouter(SimpleHTTPRequestHandler):
         length = int(self.headers.get('Content-Length', 0))
         body = self.rfile.read(length)
         return json.loads(body.decode('utf-8')) if body else {}
-
-    def get_client_ip(self):
-        x_forwarded = self.headers.get('X-Forwarded-For')
-        if x_forwarded:
-            return x_forwarded.split(',')[0].strip()
-        return self.client_address[0]
 
     def do_POST(self):
         path = urlparse(self.path).path
@@ -141,7 +141,6 @@ class CloudApplicationRouter(SimpleHTTPRequestHandler):
 
             cursor.execute("SELECT COUNT(*) FROM users")
             user_count = cursor.fetchone()[0]
-
             assigned_role = "admin" if user_count == 0 else "user"
 
             try:
@@ -152,7 +151,7 @@ class CloudApplicationRouter(SimpleHTTPRequestHandler):
                 conn.commit()
                 self._send_json({
                     "status": "success",
-                    "message": f"Account created! Assigned Role: {assigned_role.upper()}",
+                    "message": f"Account created! Role: {assigned_role.upper()}",
                     "username": username,
                     "role": assigned_role
                 })
@@ -185,8 +184,8 @@ class CloudApplicationRouter(SimpleHTTPRequestHandler):
         self.wfile.write(HTML_PAGE.encode('utf-8'))
 
 def main():
-    server = HTTPServer(('0.0.0.0', PORT), CloudApplicationRouter)
-    print(f"[+] Ghost Cloud Server listening on 0.0.0.0:{PORT}")
+    server = HTTPServer(('0.0.0.0', PORT), GhostAppRouter)
+    print(f"[+] GhostCorpHive Cloud Worker Online on port {PORT}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
