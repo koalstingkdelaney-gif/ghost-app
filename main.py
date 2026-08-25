@@ -39,7 +39,7 @@ def bot_worker(bot_id):
             )
             conn.commit()
             conn.close()
-        except Exception as e:
+        except Exception:
             pass
         time.sleep(60)
 
@@ -48,7 +48,6 @@ def launch_bot_swarm():
     for i in range(1, 566):
         t = threading.Thread(target=bot_worker, args=(i,), daemon=True)
         t.start()
-    print("[+] All 565 bots online and active.")
 
 def self_upgrade_routine():
     upgrades_catalog = [
@@ -74,46 +73,71 @@ def self_upgrade_routine():
 
 class AutonomousRouter(BaseHTTPRequestHandler):
     def do_GET(self):
+        # Endpoint for real-time data stream
+        if self.path == "/stream":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "keep-alive")
+            self.end_headers()
+            
+            try:
+                while True:
+                    conn = sqlite3.connect(DB_FILE)
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT COUNT(*) FROM bot_logs WHERE status='ACTIVE'")
+                    active_bots = cursor.fetchone()[0]
+                    cursor.execute("SELECT feature_name, timestamp FROM upgrades ORDER BY id DESC LIMIT 5")
+                    recent_upgrades = cursor.fetchall()
+                    conn.close()
+                    
+                    upgrades_html = "".join([f"<li><b>{feat}</b> (Synced: {ts})</li>" for feat, ts in recent_upgrades])
+                    
+                    payload = f"data: <span class='status'>{active_bots} / 565 Bots Active</span>|||{upgrades_html}\n\n"
+                    self.wfile.write(payload.encode("utf-8"))
+                    self.wfile.flush()
+                    time.sleep(3) # Pushes updates every 3 seconds seamlessly
+            except Exception:
+                return
+
+        # Main HTML Dashboard UI
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
         
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM bot_logs WHERE status='ACTIVE'")
-        active_bots = cursor.fetchone()[0]
-        cursor.execute("SELECT feature_name, timestamp FROM upgrades ORDER BY id DESC LIMIT 5")
-        recent_upgrades = cursor.fetchall()
-        conn.close()
-        
-        html = f"""
+        html = """
         <!DOCTYPE html>
         <html>
         <head>
             <title>GhostCorp Autonomous Command Center</title>
-            <meta http-equiv="refresh" content="15">
             <style>
-                body {{ background: #0b0f19; color: #00ffcc; font-family: monospace; padding: 20px; }}
-                h1 {{ color: #ff0055; text-shadow: 0 0 10px rgba(255,0,85,0.5); }}
-                .card {{ background: #131d31; border: 1px solid #1f293d; padding: 15px; margin-bottom: 15px; border-radius: 8px; }}
-                .status {{ color: #00ff66; font-weight: bold; }}
+                body { background: #0b0f19; color: #00ffcc; font-family: monospace; padding: 20px; }
+                h1 { color: #ff0055; text-shadow: 0 0 10px rgba(255,0,85,0.5); }
+                .card { background: #131d31; border: 1px solid #1f293d; padding: 15px; margin-bottom: 15px; border-radius: 8px; }
+                .status { color: #00ff66; font-weight: bold; }
             </style>
         </head>
         <body>
             <h1>GhostCorp Autonomous Cloud Core</h1>
             <div class="card">
-                <h3>Swarm Status: <span class="status">{active_bots} / 565 Bots Active</span></h3>
+                <h3>Swarm Status: <span id="bot-status">Connecting to swarm...</span></h3>
                 <p>Cloud architecture is self-sustaining, tracking, and upgrading in real time.</p>
             </div>
             <div class="card">
                 <h3>Self-Generated Upgrades & Synthesized Modules:</h3>
-                <ul>
-        """
-        for feat, ts in recent_upgrades:
-            html += f"<li><b>{feat}</b> (Synced at timestamp: {ts})</li>"
-        html += """
+                <ul id="upgrade-list">
+                    <li>Awaiting next system evolution cycle...</li>
                 </ul>
             </div>
+
+            <script>
+                const evtSource = new EventSource("/stream");
+                evtSource.onmessage = function(event) {
+                    const parts = event.data.split("|||");
+                    document.getElementById("bot-status").innerHTML = parts[0];
+                    document.getElementById("upgrade-list").innerHTML = parts[1];
+                };
+            </script>
         </body>
         </html>
         """
