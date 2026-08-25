@@ -8,18 +8,26 @@ import random
 import subprocess
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-DB_FILE = "ghost_military_swarm.db"
+DB_FILE = "ghost_user_tracking.db"
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS tactical_modules (
+        CREATE TABLE IF NOT EXISTS active_users (
+            user_identifier TEXT PRIMARY KEY,
+            ip_address TEXT,
+            client_platform TEXT,
+            access_count INTEGER,
+            clearance_level TEXT,
+            last_active REAL
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS telemetry_audit (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            module_code TEXT,
-            tactical_classification TEXT,
-            threat_level TEXT,
-            clearance_tier TEXT,
+            event_type TEXT,
+            details TEXT,
             timestamp REAL
         )
     ''')
@@ -42,17 +50,17 @@ def init_db():
     ''')
     cursor.execute("SELECT COUNT(*) FROM global_command")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO global_command (command_text, timestamp) VALUES (?, ?)", ("DEFCON-1: Military-Grade Swarm Intelligence Online", time.time()))
+        cursor.execute("INSERT INTO global_command (command_text, timestamp) VALUES (?, ?)", ("DEFCON-1: User Telemetry & Tracking Swarm Online", time.time()))
     conn.commit()
     conn.close()
 
 def bot_neural_worker(bot_id):
-    nodes = ["Tactical-Edge-Node-Alpha", "Command-Grid-Bravo", "Secure-Enclave-Delta", "Recon-Relay-Omega"]
-    mil_int_telemetry = [
-        "Executing decentralized mesh synchronization across peer-to-peer tactical channels.",
-        "Running adversarial evasion mapping and electronic-warfare counter-measures.",
-        "Synthesizing real-time theater operational vectors with zero-latency priority routing.",
-        "Verifying cryptographic integrity across distributed autonomous threat nodes."
+    nodes = ["Telemetry-Grid-Alpha", "User-Auditing-Beta", "Session-Tracker-Delta", "Node-Observer-Omega"]
+    tracking_telemetry = [
+        "Analyzing active session streams and mapping visitor request signatures.",
+        "Executing user fingerprint correlation and access-frequency profiling.",
+        "Verifying client authentication tokens and logging cross-node interaction data.",
+        "Optimizing telemetry indexing for high-throughput user traffic surveillance."
     ]
     
     while True:
@@ -61,15 +69,15 @@ def bot_neural_worker(bot_id):
             cursor = conn.cursor()
             cursor.execute("SELECT command_text FROM global_command ORDER BY id DESC LIMIT 1")
             row = cursor.fetchone()
-            current_directive = row[0] if row else "Autonomous Defensive Posture"
+            current_directive = row[0] if row else "Autonomous User Surveillance"
             
             origin = nodes[bot_id % len(nodes)]
-            ai_reply = f"Tactical Objective [{current_directive[:16]}...]: {mil_int_telemetry[bot_id % len(mil_int_telemetry)]}"
-            job_desc = f"Mil-Spec Task [{bot_id}]"
+            ai_reply = f"Audit Objective [{current_directive[:16]}...]: {tracking_telemetry[bot_id % len(tracking_telemetry)]}"
+            job_desc = f"Telemetry Task [{bot_id}]"
             
             cursor.execute(
                 "INSERT OR REPLACE INTO bot_logs (bot_id, server_origin, job_name, response_text, status, last_ping) VALUES (?, ?, ?, ?, ?, ?)",
-                (f"Tactical-Agent-{bot_id}", origin, job_desc, ai_reply, "MISSION_ACTIVE", time.time())
+                (f"Auditor-Agent-{bot_id}", origin, job_desc, ai_reply, "TRACKING_ACTIVE", time.time())
             )
             conn.commit()
             conn.close()
@@ -78,49 +86,73 @@ def bot_neural_worker(bot_id):
         time.sleep(15)
 
 def launch_bot_swarm():
-    print("[*] Initializing 100-Node Military-Grade Tactical Intelligence Swarm...")
+    print("[*] Initializing 100-Node User Tracking & Telemetry Swarm...")
     for i in range(1, 101):
         t = threading.Thread(target=bot_neural_worker, args=(i,), daemon=True)
         t.start()
 
-def military_intelligence_synthesizer():
-    mil_specs = [
-        ("Resilient Adaptive Self-Healing Network (RASHND)", "Instant node-drop failover routing under heavy electronic warfare jamming"),
-        ("Autonomous Multi-Domain C2 Synthesizer", "Cross-domain operational scenario generation and automated threat mitigation"),
-        ("Adversarial Evasion & Vector Camouflage", "Dynamic behavioral obfuscation to bypass active sensor signatures"),
-        ("Distributed Tactical Ledger Consensus", "Decentralized consensus verification for instantaneous mission-critical updates")
+def telemetry_synthesizer():
+    audit_modules = [
+        ("Advanced Behavioral User Profiling (ABUP)", "Deep packet inspection and session tracking across client nodes"),
+        ("Zero-Trust Visitor Authentication Ledger", "Cryptographic tracking of every individual interacting with platform APIs"),
+        ("Real-Time Traffic Heatmapping Core", "Live geographical and platform classification for active tech consumers"),
+        ("Autonomous Session Retention Matrix", "Automated tracking and database logging of repeat users and endpoints")
     ]
-    counter = 300
+    counter = 400
     while True:
-        time.sleep(75)
+        time.sleep(80)
         counter += 1
-        spec_name, spec_desc = random.choice(mil_specs)
-        module_identifier = f"{spec_name} (MilSpec-Gen-{counter})"
+        mod_name, mod_desc = random.choice(audit_modules)
+        module_id = f"{mod_name} (Tracker-Gen-{counter})"
         
         try:
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
             cursor.execute(
-                "INSERT INTO tactical_modules (module_code, tactical_classification, threat_level, clearance_tier, timestamp) VALUES (?, ?, ?, ?, ?)",
-                (module_identifier, spec_desc, "TOP_SECRET_RESTRICTED", "LEVEL_5_AUTONOMOUS", time.time())
+                "INSERT INTO telemetry_audit (event_type, details, timestamp) VALUES (?, ?, ?)",
+                (module_id, mod_desc, time.time())
             )
             conn.commit()
             conn.close()
 
-            # Autonomous GitHub Self-Publishing of Military-Grade Upgrades
-            with open("military_swarm_changelog.txt", "a") as f:
-                f.write(f"\n[{time.ctime()}] Deployed New Tactical Module: {module_identifier} -> {spec_desc}")
+            # Autonomous GitHub Self-Publishing of User Tracking Updates
+            with open("user_tracking_changelog.txt", "a") as f:
+                f.write(f"\n[{time.ctime()}] Deployed User Audit Module: {module_id} -> {mod_desc}")
             
-            subprocess.run(["git", "config", "--global", "user.email", "tactical-swarm-bot@defense.ai"], capture_output=True)
-            subprocess.run(["git", "config", "--global", "user.name", "Tactical Swarm Autonomous Bot"], capture_output=True)
-            subprocess.run(["git", "add", "military_swarm_changelog.txt"], capture_output=True)
-            subprocess.run(["git", "commit", "-m", f"Mil-Spec Tactical AI Upgrade: {module_identifier}"], capture_output=True)
+            subprocess.run(["git", "config", "--global", "user.email", "tracker-bot@ghostcorp.ai"], capture_output=True)
+            subprocess.run(["git", "config", "--global", "user.name", "Tracker Autonomous Bot"], capture_output=True)
+            subprocess.run(["git", "add", "user_tracking_changelog.txt"], capture_output=True)
+            subprocess.run(["git", "commit", "-m", f"Autonomous User Tracking Upgrade: {module_id}"], capture_output=True)
             subprocess.run(["git", "push", "origin", "main"], capture_output=True)
         except Exception:
             pass
 
-class TacticalRouter(BaseHTTPRequestHandler):
+class TrackingRouter(BaseHTTPRequestHandler):
+    def log_visitor(self, headers, client_address):
+        try:
+            ip = client_address[0]
+            user_agent = headers.get('User-Agent', 'Unknown-Client')
+            user_id = f"User-{abs(hash(ip + user_agent)) % 100000}"
+            
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute("SELECT access_count FROM active_users WHERE user_identifier = ?", (user_id,))
+            row = cursor.fetchone()
+            
+            if row:
+                new_count = row[0] + 1
+                cursor.execute("UPDATE active_users SET access_count = ?, last_active = ? WHERE user_identifier = ?", (new_count, time.time(), user_id))
+            else:
+                cursor.execute("INSERT INTO active_users (user_identifier, ip_address, client_platform, access_count, clearance_level, last_active) VALUES (?, ?, ?, ?, ?, ?)",
+                               (user_id, ip, user_agent[:40], 1, "AUTHORIZED_CLIENT", time.time()))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+
     def do_GET(self):
+        self.log_visitor(self.headers, self.client_address)
+
         if self.path == "/stream":
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
@@ -135,29 +167,29 @@ class TacticalRouter(BaseHTTPRequestHandler):
                     cursor.execute("DELETE FROM bot_logs WHERE ? - last_ping > 90", (time.time(),))
                     conn.commit()
                     
-                    cursor.execute("SELECT COUNT(*) FROM bot_logs WHERE status='MISSION_ACTIVE'")
+                    cursor.execute("SELECT COUNT(*) FROM bot_logs WHERE status='TRACKING_ACTIVE'")
                     active_bots = cursor.fetchone()[0]
                     
-                    cursor.execute("SELECT COUNT(DISTINCT server_origin) FROM bot_logs")
-                    active_servers = cursor.fetchone()[0]
+                    cursor.execute("SELECT COUNT(*) FROM active_users")
+                    total_users = cursor.fetchone()[0]
                     
                     cursor.execute("SELECT command_text FROM global_command ORDER BY id DESC LIMIT 1")
                     cmd_row = cursor.fetchone()
                     active_cmd = cmd_row[0] if cmd_row else "None"
                     
-                    cursor.execute("SELECT module_code, tactical_classification, clearance_tier FROM tactical_modules ORDER BY id DESC LIMIT 5")
-                    recent_mods = cursor.fetchall()
+                    cursor.execute("SELECT user_identifier, ip_address, client_platform, access_count, last_active FROM active_users ORDER BY last_active DESC LIMIT 6")
+                    user_records = cursor.fetchall()
                     
-                    cursor.execute("SELECT bot_id, server_origin, response_text FROM bot_logs ORDER BY last_ping DESC LIMIT 5")
+                    cursor.execute("SELECT bot_id, server_origin, response_text FROM bot_logs ORDER BY last_ping DESC LIMIT 4")
                     bot_dialogues = cursor.fetchall()
                     conn.close()
                     
-                    mods_html = "".join([f"<li><b>{mcode}</b> <span style='color:#00ff66;'>[{tier}]</span><br><span style='color:#8892b0; font-size:11px;'>{classif}</span></li>" for mcode, classif, tier in recent_mods])
+                    users_html = "".join([f"<li><b>{uid}</b> (IP: <code>{ip}</code>) - Accesses: <b>{cnt}</b><br><span style='color:#8892b0; font-size:11px;'>Platform: {plat}</span></li>" for uid, ip, plat, cnt, la in user_records])
                     dialogue_html = "".join([f"<li style='margin-bottom:6px;'><b>{bid}</b> @ <code>{serv}</code>:<br><span style='color:#00ffcc;'>\"{resp}\"</span></li>" for bid, serv, resp in bot_dialogues])
                     
-                    status_payload = f"{active_bots} Tactical Agents Active | <span style='color:#ff0055;'>{active_servers} Secure Enclaves</span>"
+                    status_payload = f"{active_bots} Auditor Agents | <span style='color:#ff0055;'>{total_users} Tracked Users</span>"
                     
-                    payload = f"data: {status_payload}|||{active_cmd}|||{mods_html}|||{dialogue_html}\n\n"
+                    payload = f"data: {status_payload}|||{active_cmd}|||{users_html}|||{dialogue_html}\n\n"
                     self.wfile.write(payload.encode("utf-8"))
                     self.wfile.flush()
                     time.sleep(3)
@@ -172,7 +204,7 @@ class TacticalRouter(BaseHTTPRequestHandler):
         <!DOCTYPE html>
         <html>
         <head>
-            <title>GhostCorp Military-Grade Tactical Intelligence Core</title>
+            <title>GhostCorp Autonomous User Tracking & Telemetry Core</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
                 body { background: #05070c; color: #00ffcc; font-family: monospace; padding: 20px; margin: 0; }
@@ -197,12 +229,12 @@ class TacticalRouter(BaseHTTPRequestHandler):
         </head>
         <body>
             <div class="container">
-                <h1>GhostCorp Tactical C2 Intelligence Core</h1>
+                <h1>GhostCorp User Tracking & Telemetry Core</h1>
                 
                 <div class="card">
-                    <h3>Global Tactical Directive Interface</h3>
+                    <h3>Global Tracking Directive Interface</h3>
                     <form action="/command" method="POST">
-                        <input type="text" name="directive" placeholder="Broadcast operational directive to swarm..." required>
+                        <input type="text" name="directive" placeholder="Broadcast tracking directive to auditor swarm..." required>
                         <button type="submit">Execute Directive</button>
                     </form>
                     <p style="font-size: 13px; margin-top: 10px;"><b>Active Directive:</b> <span id="current-cmd" style="color: #ff0055;">Syncing...</span></p>
@@ -213,16 +245,16 @@ class TacticalRouter(BaseHTTPRequestHandler):
                 </div>
 
                 <div class="card">
-                    <h3>Live Tactical Agent Mission Feed:</h3>
-                    <ul id="job-list">
-                        <li>Establishing secure tactical data links across nodes...</li>
+                    <h3>Live Tracked Users & Consumers:</h3>
+                    <ul id="upgrade-list">
+                        <li>Awaiting incoming visitor connection streams...</li>
                     </ul>
                 </div>
 
                 <div class="card">
-                    <h3>Synthesized Mil-Spec Modules & GitHub Pushes:</h3>
-                    <ul id="upgrade-list">
-                        <li>Awaiting next tactical intelligence synthesis cycle...</li>
+                    <h3>Live Auditor Agent Mission Feed:</h3>
+                    <ul id="job-list">
+                        <li>Establishing telemetry surveillance across network ports...</li>
                     </ul>
                 </div>
             </div>
@@ -262,11 +294,11 @@ class TacticalRouter(BaseHTTPRequestHandler):
 
 def run_server():
     port = int(os.environ.get("PORT", 10000))
-    server = HTTPServer(("0.0.0.0", port), TacticalRouter)
+    server = HTTPServer(("0.0.0.0", port), TrackingRouter)
     server.serve_forever()
 
 if __name__ == "__main__":
     init_db()
     threading.Thread(target=launch_bot_swarm, daemon=True).start()
-    threading.Thread(target=military_intelligence_synthesizer, daemon=True).start()
+    threading.Thread(target=telemetry_synthesizer, daemon=True).start()
     run_server()
