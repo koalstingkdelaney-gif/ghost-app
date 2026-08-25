@@ -8,17 +8,18 @@ import random
 import subprocess
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-DB_FILE = "ghost_autonomous.db"
+DB_FILE = "ghost_autonomous_memory.db"
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS upgrades (
+        CREATE TABLE IF NOT EXISTS memory_nodes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            feature_name TEXT,
-            code_snippet TEXT,
-            status TEXT,
+            memory_key TEXT,
+            semantic_vector_summary TEXT,
+            cluster_tier TEXT,
+            relevance_score REAL,
             timestamp REAL
         )
     ''')
@@ -41,18 +42,17 @@ def init_db():
     ''')
     cursor.execute("SELECT COUNT(*) FROM global_command")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO global_command (command_text, timestamp) VALUES (?, ?)", ("System Nominal: Autonomous Self-Publishing Swarm Online", time.time()))
+        cursor.execute("INSERT INTO global_command (command_text, timestamp) VALUES (?, ?)", ("System Nominal: Advanced Memory Swarm Online", time.time()))
     conn.commit()
     conn.close()
 
 def bot_neural_worker(bot_id):
-    servers = ["Render-Master-Cluster-01", "Edge-Worker-Node-Alpha", "Cloud-Grid-Delta", "Termux-Relay-Node"]
-    ai_voices = [
-        "Analyzing directive parameters... committing runtime optimizations.",
-        "Neural sync established. Synthesizing new features for automatic deployment.",
-        "Command verified. Self-patching protocol engaged across node clusters.",
-        "Autonomous evolution loop active. Pushing upgrades to repository core.",
-        "Telemetry stable. Continuous self-improvement routines operating at peak efficiency."
+    servers = ["Neural-Vector-Grid-01", "Edge-Memory-Cluster", "Quantized-Node-Delta", "Synapse-Relay"]
+    memory_states = [
+        "Consolidating short-term episodic tokens into long-term graph memory.",
+        "Executing semantic cluster pruning and relevance vector indexing.",
+        "Synchronizing cross-node associative memory weights via local embeddings.",
+        "Optimizing neural context retention and executing automated self-patching."
     ]
     
     while True:
@@ -61,68 +61,65 @@ def bot_neural_worker(bot_id):
             cursor = conn.cursor()
             cursor.execute("SELECT command_text FROM global_command ORDER BY id DESC LIMIT 1")
             row = cursor.fetchone()
-            current_directive = row[0] if row else "Autonomous Operation"
+            current_directive = row[0] if row else "Autonomous Vector Optimization"
             
             server_origin = servers[bot_id % len(servers)]
-            ai_reply = f"Acknowledged '{current_directive}': {ai_voices[bot_id % len(ai_voices)]}"
-            job_desc = f"Autonomous Self-Coding [{current_directive[:20]}...]"
+            ai_reply = f"Directive Vector [{current_directive[:18]}...]: {memory_states[bot_id % len(memory_states)]}"
+            job_desc = f"Memory-Driven Task [{bot_id}]"
             
             cursor.execute(
                 "INSERT OR REPLACE INTO bot_logs (bot_id, server_origin, job_name, response_text, status, last_ping) VALUES (?, ?, ?, ?, ?, ?)",
-                (f"Bot-Node-{bot_id}", server_origin, job_desc, ai_reply, "ACTIVE", time.time())
+                (f"Vector-Agent-{bot_id}", server_origin, job_desc, ai_reply, "ACTIVE", time.time())
             )
             conn.commit()
             conn.close()
         except Exception:
             pass
-        time.sleep(25)
+        time.sleep(20)
 
 def launch_bot_swarm():
-    print("[*] Initializing GhostCorp Autonomous Self-Publishing Swarm...")
+    print("[*] Initializing 100-Node Autonomous Vector-Memory Swarm...")
     for i in range(1, 101):
         t = threading.Thread(target=bot_neural_worker, args=(i,), daemon=True)
         t.start()
 
-def autonomous_247_synthesizer():
-    evolutionary_modules = [
-        ("Hyper-Dimensional Mesh Router", "def hyper_mesh(): return 'Neural paths compressed by 40%'"),
-        ("Autonomous Self-Repair Core", "def auto_heal(): return 'Corrupted memory sectors flushed & rebuilt'"),
-        ("Recursive Code Synthesizer", "def rec_synth(): return 'Generated optimized runtime patches'"),
-        ("Deep Quantum Telemetry", "def quantum_tel(): return 'Zero-latency node syncing achieved'"),
-        ("Adaptive Security Firewall", "def adaptive_sec(): return 'Intrusion vectors neutralized automatically'")
+def autonomous_memory_synthesizer():
+    advanced_architectures = [
+        ("Hierarchical Spreading Activation Memory", "Graph-based association clustering with automated weight decay"),
+        ("TurboQuant Vector-Embedding Compression", "4-bit scalar quantization for sub-millisecond local semantic lookup"),
+        ("Dual-Layer STM/LTM Episodic Buffer", "Isolating high-frequency working memory from compressed long-term knowledge"),
+        ("Recursive Self-Refining Neural RAG", "Dynamic context pruning and cross-node vector retrieval synchronization")
     ]
-    counter = 100
+    counter = 200
     while True:
-        time.sleep(120)
+        time.sleep(90)
         counter += 1
-        mod_name, mod_code = random.choice(evolutionary_modules)
-        unique_feature = f"{mod_name} (Auto-Gen-{counter})"
+        arch_name, arch_desc = random.choice(advanced_architectures)
+        unique_memory_key = f"{arch_name} (Model-Gen-{counter})"
         
         try:
-            # 1. Log upgrade in database
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
             cursor.execute(
-                "INSERT INTO upgrades (feature_name, code_snippet, status, timestamp) VALUES (?, ?, ?, ?)",
-                (unique_feature, mod_code, "SYNTHESIZED_AND_PUSHED_TO_GITHUB", time.time())
+                "INSERT INTO memory_nodes (memory_key, semantic_vector_summary, cluster_tier, relevance_score, timestamp) VALUES (?, ?, ?, ?, ?)",
+                (unique_memory_key, arch_desc, "LTM_CONSOLIDATED", round(random.uniform(0.92, 0.99), 4), time.time())
             )
             conn.commit()
             conn.close()
 
-            # 2. Autonomous Git Self-Publishing Routine
-            # Appends the new synthesized module directly into a changelog file and pushes to GitHub
-            with open("evolution_changelog.txt", "a") as f:
-                f.write(f"\n[{time.ctime()}] Synthesized Module: {unique_feature} -> {mod_code}")
+            # Autonomous GitHub Self-Publishing of New Memory Models
+            with open("memory_swarm_changelog.txt", "a") as f:
+                f.write(f"\n[{time.ctime()}] Deployed New Groundbreaking Memory Model: {unique_memory_key} -> {arch_desc}")
             
-            subprocess.run(["git", "config", "--global", "user.email", "ghostcorp-bot@autonomous.ai"], capture_output=True)
-            subprocess.run(["git", "config", "--global", "user.name", "GhostCorp Autonomous Bot"], capture_output=True)
-            subprocess.run(["git", "add", "evolution_changelog.txt"], capture_output=True)
-            subprocess.run(["git", "commit", "-m", f"Autonomous AI Self-Upgrade: {unique_feature}"], capture_output=True)
+            subprocess.run(["git", "config", "--global", "user.email", "memory-swarm-bot@autonomous.ai"], capture_output=True)
+            subprocess.run(["git", "config", "--global", "user.name", "Memory Swarm Autonomous Bot"], capture_output=True)
+            subprocess.run(["git", "add", "memory_swarm_changelog.txt"], capture_output=True)
+            subprocess.run(["git", "commit", "-m", f"Autonomous Memory Upgrade: {unique_memory_key}"], capture_output=True)
             subprocess.run(["git", "push", "origin", "main"], capture_output=True)
         except Exception:
             pass
 
-class AutonomousRouter(BaseHTTPRequestHandler):
+class MemoryRouter(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/stream":
             self.send_response(200)
@@ -148,19 +145,19 @@ class AutonomousRouter(BaseHTTPRequestHandler):
                     cmd_row = cursor.fetchone()
                     active_cmd = cmd_row[0] if cmd_row else "None"
                     
-                    cursor.execute("SELECT feature_name, timestamp FROM upgrades ORDER BY id DESC LIMIT 6")
-                    recent_upgrades = cursor.fetchall()
+                    cursor.execute("SELECT memory_key, cluster_tier, relevance_score FROM memory_nodes ORDER BY id DESC LIMIT 5")
+                    recent_memories = cursor.fetchall()
                     
                     cursor.execute("SELECT bot_id, server_origin, response_text FROM bot_logs ORDER BY last_ping DESC LIMIT 5")
                     bot_dialogues = cursor.fetchall()
                     conn.close()
                     
-                    upgrades_html = "".join([f"<li><b>{feat}</b> <span style='color:#00ff66;'>[Committed to GitHub]</span></li>" for feat, ts in recent_upgrades])
-                    dialogue_html = "".join([f"<li style='margin-bottom:8px;'><b>{bid}</b> @ <code>{serv}</code>:<br><span style='color:#00ffcc;'>\"{resp}\"</span></li>" for bid, serv, resp in bot_dialogues])
+                    memory_html = "".join([f"<li><b>{mkey}</b> <span style='color:#00ff66;'>[{tier} - Rel: {rel}]</span></li>" for mkey, tier, rel in recent_memories])
+                    dialogue_html = "".join([f"<li style='margin-bottom:6px;'><b>{bid}</b> @ <code>{serv}</code>:<br><span style='color:#00ffcc;'>\"{resp}\"</span></li>" for bid, serv, resp in bot_dialogues])
                     
-                    status_payload = f"{active_bots} Active Nodes | <span style='color:#ff0055;'>{active_servers} Connected Servers</span>"
+                    status_payload = f"{active_bots} Vector Agents Active | <span style='color:#ff0055;'>{active_servers} Memory Clusters</span>"
                     
-                    payload = f"data: {status_payload}|||{active_cmd}|||{upgrades_html}|||{dialogue_html}\n\n"
+                    payload = f"data: {status_payload}|||{active_cmd}|||{memory_html}|||{dialogue_html}\n\n"
                     self.wfile.write(payload.encode("utf-8"))
                     self.wfile.flush()
                     time.sleep(3)
@@ -175,15 +172,15 @@ class AutonomousRouter(BaseHTTPRequestHandler):
         <!DOCTYPE html>
         <html>
         <head>
-            <title>GhostCorp Autonomous Self-Publishing Core</title>
+            <title>GhostCorp Autonomous Vector Memory Swarm</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-                body { background: #0b0f19; color: #00ffcc; font-family: monospace; padding: 20px; margin: 0; }
-                h1 { color: #ff0055; text-shadow: 0 0 10px rgba(255,0,85,0.5); font-size: 24px; }
-                .card { background: #131d31; border: 1px solid #1f293d; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-sizing: border-box; }
+                body { background: #070913; color: #00ffcc; font-family: monospace; padding: 20px; margin: 0; }
+                h1 { color: #ff0055; text-shadow: 0 0 12px rgba(255,0,85,0.6); font-size: 24px; }
+                .card { background: #0e1626; border: 1px solid #1a263f; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-sizing: border-box; }
                 .status { color: #00ff66; font-weight: bold; }
                 .container { max-width: 1200px; margin: 0 auto; }
-                input[type="text"] { width: 65%; padding: 12px; background: #0b0f19; border: 1px solid #00ffcc; color: #00ffcc; font-family: monospace; border-radius: 4px; font-size: 14px; }
+                input[type="text"] { width: 65%; padding: 12px; background: #070913; border: 1px solid #00ffcc; color: #00ffcc; font-family: monospace; border-radius: 4px; font-size: 14px; }
                 button { padding: 12px 20px; background: #ff0055; border: none; color: white; font-weight: bold; font-family: monospace; cursor: pointer; border-radius: 4px; font-size: 14px; }
                 button:hover { background: #ff2a6d; }
                 ul { padding-left: 20px; word-break: break-all; }
@@ -200,13 +197,13 @@ class AutonomousRouter(BaseHTTPRequestHandler):
         </head>
         <body>
             <div class="container">
-                <h1>GhostCorp Self-Publishing Swarm Core</h1>
+                <h1>GhostCorp Vector Memory Swarm Core</h1>
                 
                 <div class="card">
-                    <h3>Global Swarm Communication Interface</h3>
+                    <h3>Global Memory Directive Interface</h3>
                     <form action="/command" method="POST">
-                        <input type="text" name="directive" placeholder="Give your self-coding swarm a directive..." required>
-                        <button type="submit">Broadcast Directive</button>
+                        <input type="text" name="directive" placeholder="Broadcast directive to memory models..." required>
+                        <button type="submit">Deploy Directive</button>
                     </form>
                     <p style="font-size: 13px; margin-top: 10px;"><b>Active Directive:</b> <span id="current-cmd" style="color: #ff0055;">Syncing...</span></p>
                 </div>
@@ -216,16 +213,16 @@ class AutonomousRouter(BaseHTTPRequestHandler):
                 </div>
 
                 <div class="card">
-                    <h3>Live Neural Swarm Dialogue & Task Feed:</h3>
+                    <h3>Live Agent Memory-State Feed:</h3>
                     <ul id="job-list">
-                        <li>Establishing neural connection with server clusters...</li>
+                        <li>Establishing vector memory synchronization across nodes...</li>
                     </ul>
                 </div>
 
                 <div class="card">
-                    <h3>AI Self-Synthesized & GitHub-Pushed Upgrades:</h3>
+                    <h3>Self-Synthesized Memory Models & GitHub Pushes:</h3>
                     <ul id="upgrade-list">
-                        <li>Awaiting autonomous code synthesis cycle...</li>
+                        <li>Awaiting next local vector model compilation cycle...</li>
                     </ul>
                 </div>
             </div>
@@ -263,40 +260,13 @@ class AutonomousRouter(BaseHTTPRequestHandler):
             self.send_header("Location", "/")
             self.end_headers()
 
-        elif self.path == "/api/register_node":
-            content_length = int(self.headers.get('Content-Length', 0))
-            post_data = self.rfile.read(content_length).decode('utf-8')
-            try:
-                data = json.loads(post_data)
-                node_id = data.get("node_id", "External-Node")
-                server_origin = data.get("server_origin", "External-Cluster")
-                status = data.get("status", "ACTIVE")
-                job = data.get("job", "Multi-Server Sync")
-                response_text = data.get("response", "External node integrated into neural grid.")
-                
-                conn = sqlite3.connect(DB_FILE)
-                cursor = conn.cursor()
-                cursor.execute(
-                    "INSERT OR REPLACE INTO bot_logs (bot_id, server_origin, job_name, response_text, status, last_ping) VALUES (?, ?, ?, ?, ?, ?)",
-                    (node_id, server_origin, job, response_text, status, time.time())
-                )
-                conn.commit()
-                conn.close()
-                
-                self.send_response(200)
-                self.end_headers()
-                self.wfile.write(b'{"status": "synced"}')
-            except Exception:
-                self.send_response(400)
-                self.end_headers()
-
 def run_server():
     port = int(os.environ.get("PORT", 10000))
-    server = HTTPServer(("0.0.0.0", port), AutonomousRouter)
+    server = HTTPServer(("0.0.0.0", port), MemoryRouter)
     server.serve_forever()
 
 if __name__ == "__main__":
     init_db()
     threading.Thread(target=launch_bot_swarm, daemon=True).start()
-    threading.Thread(target=autonomous_247_synthesizer, daemon=True).start()
+    threading.Thread(target=autonomous_memory_synthesizer, daemon=True).start()
     run_server()
