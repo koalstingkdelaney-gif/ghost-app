@@ -61,14 +61,13 @@ def bot_worker(bot_id):
         time.sleep(15)
 
 def launch_bot_swarm():
-    print("[*] Initializing GhostCorp Optimized Swarm (100 Core Nodes)...")
     for i in range(1, 101):
         t = threading.Thread(target=bot_worker, args=(i,), daemon=True)
         t.start()
 
 def self_upgrade_routine():
     upgrades_catalog = [
-        ("Interactive C2 Link", "def c2_handler(): return 'Command channel open'"),
+        ("Responsive UI Matrix", "def ui_adapt(): return 'Layout optimized for mobile/desktop'"),
         ("Global Swarm Mesh", "def swarm_mesh(): return 'Directive broadcast active'"),
         ("Autonomous Task Injector", "def task_inject(): return 'Dynamic payload ready'"),
         ("Neural Telemetry Matrix", "def matrix_sync(): return 'All nodes synchronized'")
@@ -134,45 +133,61 @@ class AutonomousRouter(BaseHTTPRequestHandler):
         <html>
         <head>
             <title>GhostCorp Command & Control Center</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-                body { background: #0b0f19; color: #00ffcc; font-family: monospace; padding: 20px; }
-                h1 { color: #ff0055; text-shadow: 0 0 10px rgba(255,0,85,0.5); }
-                .card { background: #131d31; border: 1px solid #1f293d; padding: 15px; margin-bottom: 15px; border-radius: 8px; }
+                body { background: #0b0f19; color: #00ffcc; font-family: monospace; padding: 20px; margin: 0; }
+                h1 { color: #ff0055; text-shadow: 0 0 10px rgba(255,0,85,0.5); font-size: 24px; }
+                .card { background: #131d31; border: 1px solid #1f293d; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-sizing: border-box; }
                 .status { color: #00ff66; font-weight: bold; }
-                input[type="text"] { width: 70%; padding: 10px; background: #0b0f19; border: 1px solid #00ffcc; color: #00ffcc; font-family: monospace; border-radius: 4px; }
-                button { padding: 10px 20px; background: #ff0055; border: none; color: white; font-weight: bold; font-family: monospace; cursor: pointer; border-radius: 4px; }
+                
+                /* Desktop Default Layout */
+                .container { max-width: 1200px; margin: 0 auto; }
+                input[type="text"] { width: 65%; padding: 12px; background: #0b0f19; border: 1px solid #00ffcc; color: #00ffcc; font-family: monospace; border-radius: 4px; font-size: 14px; }
+                button { padding: 12px 20px; background: #ff0055; border: none; color: white; font-weight: bold; font-family: monospace; cursor: pointer; border-radius: 4px; font-size: 14px; }
                 button:hover { background: #ff2a6d; }
-                ul { padding-left: 20px; }
+                ul { padding-left: 20px; word-break: break-all; }
+
+                /* Mobile Responsive Overrides */
+                @media (max-width: 768px) {
+                    body { padding: 10px; }
+                    h1 { font-size: 20px; text-align: center; }
+                    .card { padding: 12px; margin-bottom: 10px; }
+                    input[type="text"] { width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+                    button { width: 100%; display: block; }
+                    ul { padding-left: 15px; font-size: 12px; }
+                }
             </style>
         </head>
         <body>
-            <h1>GhostCorp Autonomous Cloud Core</h1>
-            
-            <div class="card">
-                <h3>Global Swarm Command Interface</h3>
-                <form action="/command" method="POST">
-                    <input type="text" name="directive" placeholder="Type a task for your swarm (e.g., Execute Deep Net Scan)..." required>
-                    <button type="submit">Broadcast Directive</button>
-                </form>
-                <p><b>Active Global Directive:</b> <span id="current-cmd" style="color: #ff0055;">Syncing...</span></p>
-            </div>
+            <div class="container">
+                <h1>GhostCorp Autonomous Cloud Core</h1>
+                
+                <div class="card">
+                    <h3>Global Swarm Command Interface</h3>
+                    <form action="/command" method="POST">
+                        <input type="text" name="directive" placeholder="Type a task for your swarm..." required>
+                        <button type="submit">Broadcast Directive</button>
+                    </form>
+                    <p style="font-size: 13px; margin-top: 10px;"><b>Active Directive:</b> <span id="current-cmd" style="color: #ff0055;">Syncing...</span></p>
+                </div>
 
-            <div class="card">
-                <h3>Swarm Telemetry: <span id="bot-status">Connecting...</span></h3>
-            </div>
+                <div class="card">
+                    <h3>Swarm Telemetry: <span id="bot-status">Connecting...</span></h3>
+                </div>
 
-            <div class="card">
-                <h3>Live Swarm Task Execution Feed:</h3>
-                <ul id="job-list">
-                    <li>Awaiting execution stream...</li>
-                </ul>
-            </div>
+                <div class="card">
+                    <h3>Live Swarm Task Execution Feed:</h3>
+                    <ul id="job-list">
+                        <li>Awaiting execution stream...</li>
+                    </ul>
+                </div>
 
-            <div class="card">
-                <h3>Self-Generated Upgrades & Synthesized Modules:</h3>
-                <ul id="upgrade-list">
-                    <li>Awaiting next system evolution cycle...</li>
-                </ul>
+                <div class="card">
+                    <h3>Self-Generated Upgrades & Synthesized Modules:</h3>
+                    <ul id="upgrade-list">
+                        <li>Awaiting next system evolution cycle...</li>
+                    </ul>
+                </div>
             </div>
 
             <script>
