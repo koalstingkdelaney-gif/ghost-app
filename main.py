@@ -34,7 +34,6 @@ def init_db():
             timestamp REAL
         )
     ''')
-    # Set default command if table is empty
     cursor.execute("SELECT COUNT(*) FROM global_command")
     if cursor.fetchone()[0] == 0:
         cursor.execute("INSERT INTO global_command (command_text, timestamp) VALUES (?, ?)", ("System Nominal: Awaiting User Directive", time.time()))
@@ -46,14 +45,11 @@ def bot_worker(bot_id):
         try:
             conn = sqlite3.connect(DB_FILE, timeout=10)
             cursor = conn.cursor()
-            
-            # Fetch the latest global user command
             cursor.execute("SELECT command_text FROM global_command ORDER BY id DESC LIMIT 1")
             row = cursor.fetchone()
             current_directive = row[0] if row else "Autonomous Operation"
             
             job_desc = f"Executing Directive: [{current_directive}]"
-            
             cursor.execute(
                 "INSERT OR REPLACE INTO bot_logs (bot_id, job_name, status, last_ping) VALUES (?, ?, ?, ?)",
                 (bot_id, job_desc, "EXECUTING", time.time())
@@ -62,12 +58,11 @@ def bot_worker(bot_id):
             conn.close()
         except Exception:
             pass
-        
-        time.sleep(40 + (bot_id % 20))
+        time.sleep(15)
 
 def launch_bot_swarm():
-    print("[*] Initializing GhostCorp Swarm: Spawning command-responsive workers...")
-    for i in range(1, 1601):
+    print("[*] Initializing GhostCorp Optimized Swarm (100 Core Nodes)...")
+    for i in range(1, 101):
         t = threading.Thread(target=bot_worker, args=(i,), daemon=True)
         t.start()
 
@@ -123,7 +118,7 @@ class AutonomousRouter(BaseHTTPRequestHandler):
                     upgrades_html = "".join([f"<li><b>{feat}</b> (Synced: {ts})</li>" for feat, ts in recent_upgrades])
                     jobs_html = "".join([f"<li><b>Bot #{bid}</b>: <code>{jname}</code></li>" for bid, jname in active_jobs])
                     
-                    payload = f"data: <span class='status'>{active_bots} Active</span>|||{active_cmd}|||{upgrades_html}|||{jobs_html}\n\n"
+                    payload = f"data: <span class='status'>{active_bots} Core Nodes Active</span>|||{active_cmd}|||{upgrades_html}|||{jobs_html}\n\n"
                     self.wfile.write(payload.encode("utf-8"))
                     self.wfile.flush()
                     time.sleep(3)
@@ -151,12 +146,12 @@ class AutonomousRouter(BaseHTTPRequestHandler):
             </style>
         </head>
         <body>
-            <h1>GhostCorp Autonomous Command Core</h1>
+            <h1>GhostCorp Autonomous Cloud Core</h1>
             
             <div class="card">
                 <h3>Global Swarm Command Interface</h3>
                 <form action="/command" method="POST">
-                    <input type="text" name="directive" placeholder="Type a task/command for all bots (e.g., Scan Subnets, Deep Cache Clean)..." required>
+                    <input type="text" name="directive" placeholder="Type a task for your swarm (e.g., Execute Deep Net Scan)..." required>
                     <button type="submit">Broadcast Directive</button>
                 </form>
                 <p><b>Active Global Directive:</b> <span id="current-cmd" style="color: #ff0055;">Syncing...</span></p>
@@ -209,13 +204,12 @@ class AutonomousRouter(BaseHTTPRequestHandler):
                 conn.commit()
                 conn.close()
             
-            # Redirect back to dashboard UI
             self.send_response(303)
             self.send_header("Location", "/")
             self.end_headers()
 
 def run_server():
-    port = int(os.environ.get("PORT", 8181))
+    port = int(os.environ.get("PORT", 10000))
     server = HTTPServer(("0.0.0.0", port), AutonomousRouter)
     server.serve_forever()
 
