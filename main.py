@@ -8,18 +8,18 @@ import random
 import subprocess
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-DB_FILE = "ghost_autonomous_memory.db"
+DB_FILE = "ghost_military_swarm.db"
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS memory_nodes (
+        CREATE TABLE IF NOT EXISTS tactical_modules (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            memory_key TEXT,
-            semantic_vector_summary TEXT,
-            cluster_tier TEXT,
-            relevance_score REAL,
+            module_code TEXT,
+            tactical_classification TEXT,
+            threat_level TEXT,
+            clearance_tier TEXT,
             timestamp REAL
         )
     ''')
@@ -42,17 +42,17 @@ def init_db():
     ''')
     cursor.execute("SELECT COUNT(*) FROM global_command")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO global_command (command_text, timestamp) VALUES (?, ?)", ("System Nominal: Advanced Memory Swarm Online", time.time()))
+        cursor.execute("INSERT INTO global_command (command_text, timestamp) VALUES (?, ?)", ("DEFCON-1: Military-Grade Swarm Intelligence Online", time.time()))
     conn.commit()
     conn.close()
 
 def bot_neural_worker(bot_id):
-    servers = ["Neural-Vector-Grid-01", "Edge-Memory-Cluster", "Quantized-Node-Delta", "Synapse-Relay"]
-    memory_states = [
-        "Consolidating short-term episodic tokens into long-term graph memory.",
-        "Executing semantic cluster pruning and relevance vector indexing.",
-        "Synchronizing cross-node associative memory weights via local embeddings.",
-        "Optimizing neural context retention and executing automated self-patching."
+    nodes = ["Tactical-Edge-Node-Alpha", "Command-Grid-Bravo", "Secure-Enclave-Delta", "Recon-Relay-Omega"]
+    mil_int_telemetry = [
+        "Executing decentralized mesh synchronization across peer-to-peer tactical channels.",
+        "Running adversarial evasion mapping and electronic-warfare counter-measures.",
+        "Synthesizing real-time theater operational vectors with zero-latency priority routing.",
+        "Verifying cryptographic integrity across distributed autonomous threat nodes."
     ]
     
     while True:
@@ -61,65 +61,65 @@ def bot_neural_worker(bot_id):
             cursor = conn.cursor()
             cursor.execute("SELECT command_text FROM global_command ORDER BY id DESC LIMIT 1")
             row = cursor.fetchone()
-            current_directive = row[0] if row else "Autonomous Vector Optimization"
+            current_directive = row[0] if row else "Autonomous Defensive Posture"
             
-            server_origin = servers[bot_id % len(servers)]
-            ai_reply = f"Directive Vector [{current_directive[:18]}...]: {memory_states[bot_id % len(memory_states)]}"
-            job_desc = f"Memory-Driven Task [{bot_id}]"
+            origin = nodes[bot_id % len(nodes)]
+            ai_reply = f"Tactical Objective [{current_directive[:16]}...]: {mil_int_telemetry[bot_id % len(mil_int_telemetry)]}"
+            job_desc = f"Mil-Spec Task [{bot_id}]"
             
             cursor.execute(
                 "INSERT OR REPLACE INTO bot_logs (bot_id, server_origin, job_name, response_text, status, last_ping) VALUES (?, ?, ?, ?, ?, ?)",
-                (f"Vector-Agent-{bot_id}", server_origin, job_desc, ai_reply, "ACTIVE", time.time())
+                (f"Tactical-Agent-{bot_id}", origin, job_desc, ai_reply, "MISSION_ACTIVE", time.time())
             )
             conn.commit()
             conn.close()
         except Exception:
             pass
-        time.sleep(20)
+        time.sleep(15)
 
 def launch_bot_swarm():
-    print("[*] Initializing 100-Node Autonomous Vector-Memory Swarm...")
+    print("[*] Initializing 100-Node Military-Grade Tactical Intelligence Swarm...")
     for i in range(1, 101):
         t = threading.Thread(target=bot_neural_worker, args=(i,), daemon=True)
         t.start()
 
-def autonomous_memory_synthesizer():
-    advanced_architectures = [
-        ("Hierarchical Spreading Activation Memory", "Graph-based association clustering with automated weight decay"),
-        ("TurboQuant Vector-Embedding Compression", "4-bit scalar quantization for sub-millisecond local semantic lookup"),
-        ("Dual-Layer STM/LTM Episodic Buffer", "Isolating high-frequency working memory from compressed long-term knowledge"),
-        ("Recursive Self-Refining Neural RAG", "Dynamic context pruning and cross-node vector retrieval synchronization")
+def military_intelligence_synthesizer():
+    mil_specs = [
+        ("Resilient Adaptive Self-Healing Network (RASHND)", "Instant node-drop failover routing under heavy electronic warfare jamming"),
+        ("Autonomous Multi-Domain C2 Synthesizer", "Cross-domain operational scenario generation and automated threat mitigation"),
+        ("Adversarial Evasion & Vector Camouflage", "Dynamic behavioral obfuscation to bypass active sensor signatures"),
+        ("Distributed Tactical Ledger Consensus", "Decentralized consensus verification for instantaneous mission-critical updates")
     ]
-    counter = 200
+    counter = 300
     while True:
-        time.sleep(90)
+        time.sleep(75)
         counter += 1
-        arch_name, arch_desc = random.choice(advanced_architectures)
-        unique_memory_key = f"{arch_name} (Model-Gen-{counter})"
+        spec_name, spec_desc = random.choice(mil_specs)
+        module_identifier = f"{spec_name} (MilSpec-Gen-{counter})"
         
         try:
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
             cursor.execute(
-                "INSERT INTO memory_nodes (memory_key, semantic_vector_summary, cluster_tier, relevance_score, timestamp) VALUES (?, ?, ?, ?, ?)",
-                (unique_memory_key, arch_desc, "LTM_CONSOLIDATED", round(random.uniform(0.92, 0.99), 4), time.time())
+                "INSERT INTO tactical_modules (module_code, tactical_classification, threat_level, clearance_tier, timestamp) VALUES (?, ?, ?, ?, ?)",
+                (module_identifier, spec_desc, "TOP_SECRET_RESTRICTED", "LEVEL_5_AUTONOMOUS", time.time())
             )
             conn.commit()
             conn.close()
 
-            # Autonomous GitHub Self-Publishing of New Memory Models
-            with open("memory_swarm_changelog.txt", "a") as f:
-                f.write(f"\n[{time.ctime()}] Deployed New Groundbreaking Memory Model: {unique_memory_key} -> {arch_desc}")
+            # Autonomous GitHub Self-Publishing of Military-Grade Upgrades
+            with open("military_swarm_changelog.txt", "a") as f:
+                f.write(f"\n[{time.ctime()}] Deployed New Tactical Module: {module_identifier} -> {spec_desc}")
             
-            subprocess.run(["git", "config", "--global", "user.email", "memory-swarm-bot@autonomous.ai"], capture_output=True)
-            subprocess.run(["git", "config", "--global", "user.name", "Memory Swarm Autonomous Bot"], capture_output=True)
-            subprocess.run(["git", "add", "memory_swarm_changelog.txt"], capture_output=True)
-            subprocess.run(["git", "commit", "-m", f"Autonomous Memory Upgrade: {unique_memory_key}"], capture_output=True)
+            subprocess.run(["git", "config", "--global", "user.email", "tactical-swarm-bot@defense.ai"], capture_output=True)
+            subprocess.run(["git", "config", "--global", "user.name", "Tactical Swarm Autonomous Bot"], capture_output=True)
+            subprocess.run(["git", "add", "military_swarm_changelog.txt"], capture_output=True)
+            subprocess.run(["git", "commit", "-m", f"Mil-Spec Tactical AI Upgrade: {module_identifier}"], capture_output=True)
             subprocess.run(["git", "push", "origin", "main"], capture_output=True)
         except Exception:
             pass
 
-class MemoryRouter(BaseHTTPRequestHandler):
+class TacticalRouter(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/stream":
             self.send_response(200)
@@ -135,7 +135,7 @@ class MemoryRouter(BaseHTTPRequestHandler):
                     cursor.execute("DELETE FROM bot_logs WHERE ? - last_ping > 90", (time.time(),))
                     conn.commit()
                     
-                    cursor.execute("SELECT COUNT(*) FROM bot_logs WHERE status='ACTIVE'")
+                    cursor.execute("SELECT COUNT(*) FROM bot_logs WHERE status='MISSION_ACTIVE'")
                     active_bots = cursor.fetchone()[0]
                     
                     cursor.execute("SELECT COUNT(DISTINCT server_origin) FROM bot_logs")
@@ -145,19 +145,19 @@ class MemoryRouter(BaseHTTPRequestHandler):
                     cmd_row = cursor.fetchone()
                     active_cmd = cmd_row[0] if cmd_row else "None"
                     
-                    cursor.execute("SELECT memory_key, cluster_tier, relevance_score FROM memory_nodes ORDER BY id DESC LIMIT 5")
-                    recent_memories = cursor.fetchall()
+                    cursor.execute("SELECT module_code, tactical_classification, clearance_tier FROM tactical_modules ORDER BY id DESC LIMIT 5")
+                    recent_mods = cursor.fetchall()
                     
                     cursor.execute("SELECT bot_id, server_origin, response_text FROM bot_logs ORDER BY last_ping DESC LIMIT 5")
                     bot_dialogues = cursor.fetchall()
                     conn.close()
                     
-                    memory_html = "".join([f"<li><b>{mkey}</b> <span style='color:#00ff66;'>[{tier} - Rel: {rel}]</span></li>" for mkey, tier, rel in recent_memories])
+                    mods_html = "".join([f"<li><b>{mcode}</b> <span style='color:#00ff66;'>[{tier}]</span><br><span style='color:#8892b0; font-size:11px;'>{classif}</span></li>" for mcode, classif, tier in recent_mods])
                     dialogue_html = "".join([f"<li style='margin-bottom:6px;'><b>{bid}</b> @ <code>{serv}</code>:<br><span style='color:#00ffcc;'>\"{resp}\"</span></li>" for bid, serv, resp in bot_dialogues])
                     
-                    status_payload = f"{active_bots} Vector Agents Active | <span style='color:#ff0055;'>{active_servers} Memory Clusters</span>"
+                    status_payload = f"{active_bots} Tactical Agents Active | <span style='color:#ff0055;'>{active_servers} Secure Enclaves</span>"
                     
-                    payload = f"data: {status_payload}|||{active_cmd}|||{memory_html}|||{dialogue_html}\n\n"
+                    payload = f"data: {status_payload}|||{active_cmd}|||{mods_html}|||{dialogue_html}\n\n"
                     self.wfile.write(payload.encode("utf-8"))
                     self.wfile.flush()
                     time.sleep(3)
@@ -172,15 +172,15 @@ class MemoryRouter(BaseHTTPRequestHandler):
         <!DOCTYPE html>
         <html>
         <head>
-            <title>GhostCorp Autonomous Vector Memory Swarm</title>
+            <title>GhostCorp Military-Grade Tactical Intelligence Core</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-                body { background: #070913; color: #00ffcc; font-family: monospace; padding: 20px; margin: 0; }
+                body { background: #05070c; color: #00ffcc; font-family: monospace; padding: 20px; margin: 0; }
                 h1 { color: #ff0055; text-shadow: 0 0 12px rgba(255,0,85,0.6); font-size: 24px; }
-                .card { background: #0e1626; border: 1px solid #1a263f; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-sizing: border-box; }
+                .card { background: #0b111d; border: 1px solid #162238; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-sizing: border-box; }
                 .status { color: #00ff66; font-weight: bold; }
                 .container { max-width: 1200px; margin: 0 auto; }
-                input[type="text"] { width: 65%; padding: 12px; background: #070913; border: 1px solid #00ffcc; color: #00ffcc; font-family: monospace; border-radius: 4px; font-size: 14px; }
+                input[type="text"] { width: 65%; padding: 12px; background: #05070c; border: 1px solid #00ffcc; color: #00ffcc; font-family: monospace; border-radius: 4px; font-size: 14px; }
                 button { padding: 12px 20px; background: #ff0055; border: none; color: white; font-weight: bold; font-family: monospace; cursor: pointer; border-radius: 4px; font-size: 14px; }
                 button:hover { background: #ff2a6d; }
                 ul { padding-left: 20px; word-break: break-all; }
@@ -197,13 +197,13 @@ class MemoryRouter(BaseHTTPRequestHandler):
         </head>
         <body>
             <div class="container">
-                <h1>GhostCorp Vector Memory Swarm Core</h1>
+                <h1>GhostCorp Tactical C2 Intelligence Core</h1>
                 
                 <div class="card">
-                    <h3>Global Memory Directive Interface</h3>
+                    <h3>Global Tactical Directive Interface</h3>
                     <form action="/command" method="POST">
-                        <input type="text" name="directive" placeholder="Broadcast directive to memory models..." required>
-                        <button type="submit">Deploy Directive</button>
+                        <input type="text" name="directive" placeholder="Broadcast operational directive to swarm..." required>
+                        <button type="submit">Execute Directive</button>
                     </form>
                     <p style="font-size: 13px; margin-top: 10px;"><b>Active Directive:</b> <span id="current-cmd" style="color: #ff0055;">Syncing...</span></p>
                 </div>
@@ -213,16 +213,16 @@ class MemoryRouter(BaseHTTPRequestHandler):
                 </div>
 
                 <div class="card">
-                    <h3>Live Agent Memory-State Feed:</h3>
+                    <h3>Live Tactical Agent Mission Feed:</h3>
                     <ul id="job-list">
-                        <li>Establishing vector memory synchronization across nodes...</li>
+                        <li>Establishing secure tactical data links across nodes...</li>
                     </ul>
                 </div>
 
                 <div class="card">
-                    <h3>Self-Synthesized Memory Models & GitHub Pushes:</h3>
+                    <h3>Synthesized Mil-Spec Modules & GitHub Pushes:</h3>
                     <ul id="upgrade-list">
-                        <li>Awaiting next local vector model compilation cycle...</li>
+                        <li>Awaiting next tactical intelligence synthesis cycle...</li>
                     </ul>
                 </div>
             </div>
@@ -262,11 +262,11 @@ class MemoryRouter(BaseHTTPRequestHandler):
 
 def run_server():
     port = int(os.environ.get("PORT", 10000))
-    server = HTTPServer(("0.0.0.0", port), MemoryRouter)
+    server = HTTPServer(("0.0.0.0", port), TacticalRouter)
     server.serve_forever()
 
 if __name__ == "__main__":
     init_db()
     threading.Thread(target=launch_bot_swarm, daemon=True).start()
-    threading.Thread(target=autonomous_memory_synthesizer, daemon=True).start()
+    threading.Thread(target=military_intelligence_synthesizer, daemon=True).start()
     run_server()
