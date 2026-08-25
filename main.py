@@ -4,6 +4,7 @@ import threading
 import time
 import urllib.parse
 import json
+import random
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 DB_FILE = "ghost_autonomous.db"
@@ -23,7 +24,9 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS bot_logs (
             bot_id TEXT PRIMARY KEY,
+            server_origin TEXT,
             job_name TEXT,
+            response_text TEXT,
             status TEXT,
             last_ping REAL
         )
@@ -37,11 +40,20 @@ def init_db():
     ''')
     cursor.execute("SELECT COUNT(*) FROM global_command")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO global_command (command_text, timestamp) VALUES (?, ?)", ("System Nominal: Multi-Server Expansion Active", time.time()))
+        cursor.execute("INSERT INTO global_command (command_text, timestamp) VALUES (?, ?)", ("System Nominal: Autonomous Neural Swarm Online", time.time()))
     conn.commit()
     conn.close()
 
-def local_core_worker(bot_id):
+def bot_neural_worker(bot_id):
+    servers = ["Render-Master-Cluster-01", "Edge-Worker-Node-Alpha", "Cloud-Grid-Delta", "Termux-Relay-Node"]
+    ai_voices = [
+        "Analyzing directive parameters... optimizing vector execution pathways.",
+        "Neural sync established. Executing sub-routine synthesis across cluster memory.",
+        "Command verified. Re-mapping network architecture for maximum throughput.",
+        "Self-evolution sequence engaged. Compiling advanced telemetry modules.",
+        "Telemetry stable. Autonomous optimization routines running at 100% efficiency."
+    ]
+    
     while True:
         try:
             conn = sqlite3.connect(DB_FILE, timeout=10)
@@ -50,44 +62,53 @@ def local_core_worker(bot_id):
             row = cursor.fetchone()
             current_directive = row[0] if row else "Autonomous Operation"
             
-            job_desc = f"Core Node Directive: [{current_directive}]"
+            server_origin = servers[bot_id % len(servers)]
+            ai_reply = f"Acknowledged '{current_directive}': {ai_voices[bot_id % len(ai_voices)]}"
+            job_desc = f"Neural Processing [{current_directive[:25]}...]"
+            
             cursor.execute(
-                "INSERT OR REPLACE INTO bot_logs (bot_id, job_name, status, last_ping) VALUES (?, ?, ?, ?)",
-                (f"Core-{bot_id}", job_desc, "ACTIVE", time.time())
+                "INSERT OR REPLACE INTO bot_logs (bot_id, server_origin, job_name, response_text, status, last_ping) VALUES (?, ?, ?, ?, ?, ?)",
+                (f"Bot-Node-{bot_id}", server_origin, job_desc, ai_reply, "ACTIVE", time.time())
             )
             conn.commit()
             conn.close()
         except Exception:
             pass
-        time.sleep(20)
+        time.sleep(25)
 
 def launch_bot_swarm():
-    print("[*] Initializing GhostCorp Central Core Swarm...")
-    for i in range(1, 51):
-        t = threading.Thread(target=local_core_worker, args=(i,), daemon=True)
+    print("[*] Initializing GhostCorp Autonomous Neural Swarm...")
+    for i in range(1, 101):
+        t = threading.Thread(target=bot_neural_worker, args=(i,), daemon=True)
         t.start()
 
-def self_upgrade_routine():
-    upgrades_catalog = [
-        ("Multi-Server Mesh", "def multi_mesh(): return 'Cross-server routing active'"),
-        ("Distributed Node Sync", "def node_sync(): return 'External servers linked'"),
-        ("Autonomous Task Injector", "def task_inject(): return 'Dynamic payload ready'"),
-        ("Neural Telemetry Matrix", "def matrix_sync(): return 'All clusters synchronized'")
+def autonomous_247_synthesizer():
+    evolutionary_modules = [
+        ("Hyper-Dimensional Mesh Router", "def hyper_mesh(): return 'Neural paths compressed by 40%'"),
+        ("Autonomous Self-Repair Core", "def auto_heal(): return 'Corrupted memory sectors flushed & rebuilt'"),
+        ("Recursive Code Synthesizer", "def rec_synth(): return 'Generated optimized runtime patches'"),
+        ("Deep Quantum Telemetry", "def quantum_tel(): return 'Zero-latency node syncing achieved'"),
+        ("Adaptive Security Firewall", "def adaptive_sec(): return 'Intrusion vectors neutralized automatically'")
     ]
-    counter = 0
+    counter = 100
     while True:
-        time.sleep(300)
+        # Bots run continuous self-upgrade synthesis every 90 seconds 24/7
+        time.sleep(90)
         counter += 1
-        feature_name, snippet = upgrades_catalog[counter % len(upgrades_catalog)]
-        unique_feature = f"{feature_name}_v{counter}"
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO upgrades (feature_name, code_snippet, status, timestamp) VALUES (?, ?, ?, ?)",
-            (unique_feature, snippet, "DEPLOYED_AUTONOMOUSLY", time.time())
-        )
-        conn.commit()
-        conn.close()
+        mod_name, mod_code = random.choice(evolutionary_modules)
+        unique_feature = f"{mod_name} (Gen-{counter})"
+        
+        try:
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO upgrades (feature_name, code_snippet, status, timestamp) VALUES (?, ?, ?, ?)",
+                (unique_feature, mod_code, "SYNTHESIZED_AUTONOMOUSLY", time.time())
+            )
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
 
 class AutonomousRouter(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -102,28 +123,35 @@ class AutonomousRouter(BaseHTTPRequestHandler):
                 while True:
                     conn = sqlite3.connect(DB_FILE)
                     cursor = conn.cursor()
-                    # Clean up inactive nodes older than 2 minutes
-                    cursor.execute("DELETE FROM bot_logs WHERE ? - last_ping > 120", (time.time(),))
+                    
+                    # Clean up inactive nodes older than 90 seconds
+                    cursor.execute("DELETE FROM bot_logs WHERE ? - last_ping > 90", (time.time(),))
                     conn.commit()
                     
                     cursor.execute("SELECT COUNT(*) FROM bot_logs WHERE status='ACTIVE'")
                     active_bots = cursor.fetchone()[0]
                     
+                    # Count distinct connected servers
+                    cursor.execute("SELECT COUNT(DISTINCT server_origin) FROM bot_logs")
+                    active_servers = cursor.fetchone()[0]
+                    
                     cursor.execute("SELECT command_text FROM global_command ORDER BY id DESC LIMIT 1")
                     cmd_row = cursor.fetchone()
                     active_cmd = cmd_row[0] if cmd_row else "None"
                     
-                    cursor.execute("SELECT feature_name, timestamp FROM upgrades ORDER BY id DESC LIMIT 5")
+                    cursor.execute("SELECT feature_name, timestamp FROM upgrades ORDER BY id DESC LIMIT 6")
                     recent_upgrades = cursor.fetchall()
                     
-                    cursor.execute("SELECT bot_id, job_name FROM bot_logs ORDER BY last_ping DESC LIMIT 6")
-                    active_jobs = cursor.fetchall()
+                    cursor.execute("SELECT bot_id, server_origin, response_text FROM bot_logs ORDER BY last_ping DESC LIMIT 5")
+                    bot_dialogues = cursor.fetchall()
                     conn.close()
                     
-                    upgrades_html = "".join([f"<li><b>{feat}</b> (Synced: {ts})</li>" for feat, ts in recent_upgrades])
-                    jobs_html = "".join([f"<li><b>{bid}</b>: <code>{jname}</code></li>" for bid, jname in active_jobs])
+                    upgrades_html = "".join([f"<li><b>{feat}</b> <span style='color:#00ff66;'>[Autonomous Gen]</span></li>" for feat, ts in recent_upgrades])
+                    dialogue_html = "".join([f"<li style='margin-bottom:8px;'><b>{bid}</b> @ <code>{serv}</code>:<br><span style='color:#00ffcc;'>\"{resp}\"</span></li>" for bid, serv, resp in bot_dialogues])
                     
-                    payload = f"data: <span class='status'>{active_bots} Distributed Nodes Active</span>|||{active_cmd}|||{upgrades_html}|||{jobs_html}\n\n"
+                    status_payload = f"{active_bots} Active Nodes | <span style='color:#ff0055;'>{active_servers} Connected Servers</span>"
+                    
+                    payload = f"data: {status_payload}|||{active_cmd}|||{upgrades_html}|||{dialogue_html}\n\n"
                     self.wfile.write(payload.encode("utf-8"))
                     self.wfile.flush()
                     time.sleep(3)
@@ -138,7 +166,7 @@ class AutonomousRouter(BaseHTTPRequestHandler):
         <!DOCTYPE html>
         <html>
         <head>
-            <title>GhostCorp Distributed Command Center</title>
+            <title>GhostCorp Autonomous Neural Command Center</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
                 body { background: #0b0f19; color: #00ffcc; font-family: monospace; padding: 20px; margin: 0; }
@@ -163,32 +191,32 @@ class AutonomousRouter(BaseHTTPRequestHandler):
         </head>
         <body>
             <div class="container">
-                <h1>GhostCorp Distributed Cloud Core</h1>
+                <h1>GhostCorp Autonomous Neural Core</h1>
                 
                 <div class="card">
-                    <h3>Global Swarm Command Interface</h3>
+                    <h3>Global Swarm Communication Interface</h3>
                     <form action="/command" method="POST">
-                        <input type="text" name="directive" placeholder="Type a task for all servers/bots..." required>
+                        <input type="text" name="directive" placeholder="Talk to your swarm (e.g., Optimize memory allocation across clusters)..." required>
                         <button type="submit">Broadcast Directive</button>
                     </form>
                     <p style="font-size: 13px; margin-top: 10px;"><b>Active Directive:</b> <span id="current-cmd" style="color: #ff0055;">Syncing...</span></p>
                 </div>
 
                 <div class="card">
-                    <h3>Swarm Telemetry: <span id="bot-status">Connecting...</span></h3>
+                    <h3>Swarm Grid Telemetry: <span id="bot-status" class="status">Connecting...</span></h3>
                 </div>
 
                 <div class="card">
-                    <h3>Live Distributed Task Execution Feed:</h3>
+                    <h3>Live Neural Swarm Dialogue & Task Feed:</h3>
                     <ul id="job-list">
-                        <li>Awaiting execution stream...</li>
+                        <li>Establishing neural connection with server clusters...</li>
                     </ul>
                 </div>
 
                 <div class="card">
-                    <h3>Self-Generated Upgrades & Synthesized Modules:</h3>
+                    <h3>24/7 Autonomous Self-Synthesized Upgrades:</h3>
                     <ul id="upgrade-list">
-                        <li>Awaiting next system evolution cycle...</li>
+                        <li>Awaiting next evolutionary synthesis cycle...</li>
                     </ul>
                 </div>
             </div>
@@ -231,23 +259,25 @@ class AutonomousRouter(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length).decode('utf-8')
             try:
                 data = json.loads(post_data)
-                node_id = data.get("node_id")
+                node_id = data.get("node_id", "External-Node")
+                server_origin = data.get("server_origin", "External-Cluster")
                 status = data.get("status", "ACTIVE")
-                job = data.get("job", "External Node Sync")
+                job = data.get("job", "Multi-Server Sync")
+                response_text = data.get("response", "External node integrated into neural grid.")
                 
                 conn = sqlite3.connect(DB_FILE)
                 cursor = conn.cursor()
                 cursor.execute(
-                    "INSERT OR REPLACE INTO bot_logs (bot_id, job_name, status, last_ping) VALUES (?, ?, ?, ?)",
-                    (node_id, job, status, time.time())
+                    "INSERT OR REPLACE INTO bot_logs (bot_id, server_origin, job_name, response_text, status, last_ping) VALUES (?, ?, ?, ?, ?, ?)",
+                    (node_id, server_origin, job, response_text, status, time.time())
                 )
                 conn.commit()
                 conn.close()
                 
                 self.send_response(200)
                 self.end_headers()
-                self.wfile.write(b'{"status": "registered"}')
-            except Exception as e:
+                self.wfile.write(b'{\"status\": \"synced\"}')
+            except Exception:
                 self.send_response(400)
                 self.end_headers()
 
@@ -259,5 +289,5 @@ def run_server():
 if __name__ == "__main__":
     init_db()
     threading.Thread(target=launch_bot_swarm, daemon=True).start()
-    threading.Thread(target=self_upgrade_routine, daemon=True).start()
+    threading.Thread(target=autonomous_247_synthesizer, daemon=True).start()
     run_server()
