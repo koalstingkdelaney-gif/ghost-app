@@ -6,7 +6,7 @@ import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from cryptography.fernet import Fernet
 
-DB_FILE = "ghost_ultimate_matrix.db"
+DB_FILE = "ghost_distributed_matrix.db"
 KEY_FILE = "server_master.key"
 
 # --- 1. Cryptographic Pipeline (AES-256) ---
@@ -61,35 +61,54 @@ def init_db():
                 updated_at REAL
             )
         ''')
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS app_state (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )
+        ''')
+        # Set initial UI theme evolution state
+        cursor.execute("INSERT OR IGNORE INTO app_state (key, value) VALUES ('ui_version', 'v3.4-Cyber-Matrix')")
+        cursor.execute("INSERT OR IGNORE INTO app_state (key, value) VALUES ('cluster_status', 'Multi-Node Load Balanced')")
         conn.commit()
         conn.close()
     except Exception as e:
         print(f"DB Init Error: {e}")
 
-# --- 3. Background Swarm Daemon (Self-Upgrading & Autonomous Loop) ---
+# --- 3. Self-Upgrading Background Swarm Daemon ---
 def run_autonomous_swarm():
-    """Runs silently in the background, executing tasks and simulating self-upgrades."""
+    """Runs in the background, upgrading UI aesthetics and balancing load telemetry."""
+    upgrade_cycles = [
+        "v3.5 - Optimizing Neural Packet Routing",
+        "v3.6 - Upgrading UI Glassmorphism & Glow Effects",
+        "v3.7 - Enhancing Load Distribution Matrix",
+        "v3.8 - Maximum Resilience & Anti-Idle Protocol Active"
+    ]
+    cycle_index = 0
+
     while True:
         try:
+            time.sleep(45) # Optimization sweep interval
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
             
-            # Log periodic swarm health check
+            # Simulate self-upgrade evolution
+            new_version = upgrade_cycles[cycle_index % len(upgrade_cycles)]
+            cycle_index += 1
+
+            cursor.execute("INSERT OR REPLACE INTO app_state (key, value) VALUES ('ui_version', ?)", (new_version,))
             cursor.execute("INSERT INTO swarm_telemetry (task_name, status, updated_at) VALUES (?, ?, ?)",
-                           ("Autonomous_Swarm_Daemon", "ACTIVE_OPTIMIZING", time.time()))
+                           ("Swarm_Self_Upgrade_Daemon", f"UPGRADED TO {new_version}", time.time()))
             conn.commit()
             conn.close()
         except Exception:
             pass
-        
-        # Sleep interval between background optimization sweeps
-        time.sleep(30)
 
-# Start background swarm thread safely
+# Start background swarm optimization thread safely
 threading.Thread(target=run_autonomous_swarm, daemon=True).start()
 
 # --- 4. Web Server & API Router ---
-class UltimateMasterRouter(BaseHTTPRequestHandler):
+class DistributedMasterRouter(BaseHTTPRequestHandler):
     def _send_response(self, content, content_type="text/html", status=200):
         self.send_response(status)
         self.send_header("Content-type", content_type)
@@ -112,6 +131,14 @@ class UltimateMasterRouter(BaseHTTPRequestHandler):
             self._send_response("<h1>Access Denied</h1><p>Node permanently banned for policy violations.</p>", status=403)
             return
 
+        # Fetch current UI version from swarm state
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM app_state WHERE key = 'ui_version'")
+        v_row = cursor.fetchone()
+        current_ui_version = v_row[0] if v_row else "v3.0-Matrix"
+        conn.close()
+
         # API Endpoint: Fetch Chat Archive
         if self.path == "/api/messages":
             conn = sqlite3.connect(DB_FILE)
@@ -131,7 +158,7 @@ class UltimateMasterRouter(BaseHTTPRequestHandler):
             self._send_response(json.dumps(messages), content_type="application/json")
             return
 
-        # API Endpoint: Fetch Swarm Telemetry Status
+        # API Endpoint: Fetch Swarm Telemetry & Cluster Status
         if self.path == "/api/swarm":
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
@@ -140,51 +167,51 @@ class UltimateMasterRouter(BaseHTTPRequestHandler):
             conn.close()
             
             tasks = [{"task": r[0], "status": r[1], "time": time.strftime("%H:%M:%S", time.localtime(r[2]))} for r in rows]
-            self._send_response(json.dumps(tasks), content_type="application/json")
+            self._send_response(json.dumps({"version": current_ui_version, "telemetry": tasks}), content_type="application/json")
             return
 
-        # Main Unified Command & Control Dashboard (/app)
+        # Main Distributed C2 Dashboard (/app)
         if self.path == "/app":
-            dashboard_html = """
+            dashboard_html = f"""
             <!DOCTYPE html>
             <html>
             <head>
-                <title>GhostCorp C2 Matrix & Swarm Dashboard</title>
+                <title>GhostCorp Distributed Matrix ({current_ui_version})</title>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <style>
-                    * { box-sizing: border-box; }
-                    body { background: #05070c; color: #00ffcc; font-family: monospace; margin: 0; padding: 15px; display: flex; flex-direction: column; height: 100vh; }
-                    .header { background: #0b111d; border: 1px solid #162238; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-                    .header h2 { margin: 0; font-size: 18px; color: #ff0055; text-shadow: 0 0 10px rgba(255,0,85,0.5); }
-                    .main-layout { display: flex; gap: 10px; flex: 1; overflow: hidden; }
-                    .chat-panel { flex: 2; background: #0b111d; border: 1px solid #162238; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; }
-                    .swarm-panel { flex: 1; background: #0b111d; border: 1px solid #162238; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; }
-                    .chat-box { flex: 1; background: #05070c; border: 1px solid #162238; border-radius: 6px; padding: 10px; overflow-y: auto; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }
-                    .msg-card { background: #0b111d; border-left: 3px solid #00ffcc; padding: 8px; border-radius: 4px; font-size: 13px; }
-                    .msg-meta { font-size: 10px; color: #8892b0; margin-bottom: 2px; display: flex; justify-content: space-between; }
-                    .msg-user { color: #ff0055; font-weight: bold; }
-                    .msg-text { color: #e6f1ff; word-break: break-word; }
-                    .input-area { display: flex; gap: 10px; }
-                    input[type="text"] { flex: 1; background: #05070c; border: 1px solid #162238; padding: 12px; color: #00ffcc; border-radius: 6px; font-family: monospace; outline: none; }
-                    button { background: #ff0055; border: none; color: white; padding: 12px 18px; font-weight: bold; font-family: monospace; border-radius: 6px; cursor: pointer; }
-                    button:hover { background: #ff2a6d; }
-                    .swarm-log { background: #05070c; border: 1px solid #162238; border-radius: 6px; padding: 10px; flex: 1; overflow-y: auto; font-size: 11px; color: #00ffcc; }
+                    * {{ box-sizing: border-box; }}
+                    body {{ background: #05070c; color: #00ffcc; font-family: monospace; margin: 0; padding: 15px; display: flex; flex-direction: column; height: 100vh; }}
+                    .header {{ background: #0b111d; border: 1px solid #ff0055; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 0 15px rgba(255,0,85,0.3); }}
+                    .header h2 {{ margin: 0; font-size: 18px; color: #ff0055; text-shadow: 0 0 10px rgba(255,0,85,0.6); }}
+                    .main-layout {{ display: flex; gap: 10px; flex: 1; overflow: hidden; }}
+                    .chat-panel {{ flex: 2; background: #0b111d; border: 1px solid #162238; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; }}
+                    .swarm-panel {{ flex: 1; background: #0b111d; border: 1px solid #162238; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; }}
+                    .chat-box {{ flex: 1; background: #05070c; border: 1px solid #162238; border-radius: 6px; padding: 10px; overflow-y: auto; margin-bottom: 10px; display: flex; flex-direction: column; gap: 8px; }}
+                    .msg-card {{ background: #0b111d; border-left: 3px solid #00ffcc; padding: 8px; border-radius: 4px; font-size: 13px; }}
+                    .msg-meta {{ font-size: 10px; color: #8892b0; margin-bottom: 2px; display: flex; justify-content: space-between; }}
+                    .msg-user {{ color: #ff0055; font-weight: bold; }}
+                    .msg-text {{ color: #e6f1ff; word-break: break-word; }}
+                    .input-area {{ display: flex; gap: 10px; }}
+                    input[type="text"] {{ flex: 1; background: #05070c; border: 1px solid #162238; padding: 12px; color: #00ffcc; border-radius: 6px; font-family: monospace; outline: none; }}
+                    button {{ background: #ff0055; border: none; color: white; padding: 12px 18px; font-weight: bold; font-family: monospace; border-radius: 6px; cursor: pointer; }}
+                    button:hover {{ background: #ff2a6d; }}
+                    .swarm-log {{ background: #05070c; border: 1px solid #162238; border-radius: 6px; padding: 10px; flex: 1; overflow-y: auto; font-size: 11px; color: #00ffcc; }}
                 </style>
             </head>
             <body>
                 <div class="header">
-                    <h2>GhostCorp Command Matrix</h2>
-                    <span style="font-size: 11px; color: #8892b0;">● Swarm Active | AES-256 Storage | Indemnification Enforced</span>
+                    <h2>GhostCorp Distributed Matrix</h2>
+                    <span id="uiVerBadge" style="font-size: 11px; color: #ff0055; border: 1px solid #ff0055; padding: 4px 8px; border-radius: 4px;">State: {current_ui_version}</span>
                 </div>
                 
                 <div class="main-layout">
                     <!-- Chat & Boss Interaction Panel -->
                     <div class="chat-panel">
-                        <h3 style="margin-top:0; color:#ff0055; font-size:14px;">Secure Communications Feed</h3>
+                        <h3 style="margin-top:0; color:#ff0055; font-size:14px;">Cluster Secure Feed</h3>
                         <div class="chat-box" id="chatBox">
                             <div class="msg-card">
                                 <div class="msg-meta"><span class="msg-user">SYSTEM</span> <span>00:00:00</span></div>
-                                <div class="msg-text">C2 Matrix online. Issue commands to swarm or chat freely.</div>
+                                <div class="msg-text">Distributed multi-node cluster online. Swarm upgrading active.</div>
                             </div>
                         </div>
                         <div class="input-area">
@@ -195,11 +222,11 @@ class UltimateMasterRouter(BaseHTTPRequestHandler):
 
                     <!-- Autonomous Swarm Telemetry Panel -->
                     <div class="swarm-panel">
-                        <h3 style="margin-top:0; color:#00ffcc; font-size:14px;">Active Swarm Telemetry</h3>
+                        <h3 style="margin-top:0; color:#00ffcc; font-size:14px;">Swarm Evolution Logs</h3>
                         <div class="swarm-log" id="swarmLog">
-                            Loading swarm nodes...
+                            Syncing multi-server telemetry...
                         </div>
-                        <button style="margin-top:10px; width:100%; background:#162238; color:#00ffcc; border:1px solid #00ffcc;" onclick="triggerUpgrade()">FORCE SWARM UPGRADE</button>
+                        <button style="margin-top:10px; width:100%; background:#162238; color:#00ffcc; border:1px solid #00ffcc;" onclick="triggerUpgrade()">FORCE SWARM EVOLUTION</button>
                     </div>
                 </div>
 
@@ -208,7 +235,6 @@ class UltimateMasterRouter(BaseHTTPRequestHandler):
 
                     async function loadData() {
                         try {
-                            // Load Messages
                             let res = await fetch('/api/messages');
                             let data = await res.json();
                             let chatBox = document.getElementById('chatBox');
@@ -221,12 +247,13 @@ class UltimateMasterRouter(BaseHTTPRequestHandler):
                             });
                             chatBox.scrollTop = chatBox.scrollHeight;
 
-                            // Load Swarm Telemetry
                             let sRes = await fetch('/api/swarm');
                             let sData = await sRes.json();
+                            document.getElementById('uiVerBadge').innerText = "State: " + sData.version;
+                            
                             let swarmLog = document.getElementById('swarmLog');
                             swarmLog.innerHTML = '';
-                            sData.forEach(t => {
+                            sData.telemetry.forEach(t => {
                                 swarmLog.innerHTML += `<div>[${t.time}] ${t.task} -> <b>${t.status}</b></div>`;
                             });
                         } catch(e) {}
@@ -250,7 +277,7 @@ class UltimateMasterRouter(BaseHTTPRequestHandler):
                         await fetch('/api/chat', {
                             method: 'POST',
                             headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ username: "DIRECTIVE", text: "COMMAND: Swarm initiated self-upgrade sequence." })
+                            body: JSON.stringify({ username: "DIRECTIVE", text: "COMMAND: Boss ordered immediate swarm evolution and layout upgrade." })
                         });
                         loadData();
                     }
@@ -272,7 +299,7 @@ class UltimateMasterRouter(BaseHTTPRequestHandler):
         <!DOCTYPE html>
         <html>
         <head>
-            <title>GhostCorp Access Gateway</title>
+            <title>GhostCorp Distributed Gateway</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
                 body { background: #05070c; color: #00ffcc; font-family: monospace; padding: 20px; margin: 0; }
@@ -286,17 +313,17 @@ class UltimateMasterRouter(BaseHTTPRequestHandler):
         </head>
         <body>
             <div class="container">
-                <h1>GhostCorp C2 Gateway</h1>
+                <h1>GhostCorp Cluster Gateway</h1>
                 <div class="card">
                     <h3>Terms of Service & Indemnification</h3>
                     <div class="terms-box">
-                        <b>1. Sole User Accountability:</b> Users take 100% responsibility for actions executed through this software.<br><br>
-                        <b>2. Indemnity Clause:</b> Hold harmless the creators and operators against all claims.<br><br>
-                        <b>3. Autonomous Swarm & AI Moderation:</b> Background daemons and AI security agents actively monitor and log network telemetry.<br><br>
+                        <b>1. Sole User Accountability:</b> You accept 100% legal responsibility for actions executed through this software.<br><br>
+                        <b>2. Indemnity Clause:</b> Hold harmless the creators and cluster operators against all claims.<br><br>
+                        <b>3. Self-Upgrading Swarm & AI Moderation:</b> Autonomous background nodes evolve UI layouts and monitor network traffic.<br><br>
                         <b>4. Provided "AS IS":</b> No warranties expressed or implied.
                     </div>
                     <form action="/agree" method="POST">
-                        <button type="submit">I AGREE & ENTER C2 MATRIX</button>
+                        <button type="submit">I AGREE & ENTER CLUSTER MATRIX</button>
                     </form>
                 </div>
             </div>
@@ -350,8 +377,8 @@ class UltimateMasterRouter(BaseHTTPRequestHandler):
 
 def run_server():
     port = int(os.environ.get("PORT", 10000))
-    server = HTTPServer(("0.0.0.0", port), UltimateMasterRouter)
-    print(f"[*] Ultimate C2 Master Server running on port {port}")
+    server = HTTPServer(("0.0.0.0", port), DistributedMasterRouter)
+    print(f"[*] Distributed Cluster Master Server running on port {port}")
     server.serve_forever()
 
 if __name__ == "__main__":
