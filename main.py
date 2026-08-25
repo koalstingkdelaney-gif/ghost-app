@@ -67,7 +67,6 @@ def init_db():
                 value TEXT
             )
         ''')
-        # Set initial UI theme evolution state
         cursor.execute("INSERT OR IGNORE INTO app_state (key, value) VALUES ('ui_version', 'v3.4-Cyber-Matrix')")
         cursor.execute("INSERT OR IGNORE INTO app_state (key, value) VALUES ('cluster_status', 'Multi-Node Load Balanced')")
         conn.commit()
@@ -77,7 +76,6 @@ def init_db():
 
 # --- 3. Self-Upgrading Background Swarm Daemon ---
 def run_autonomous_swarm():
-    """Runs in the background, upgrading UI aesthetics and balancing load telemetry."""
     upgrade_cycles = [
         "v3.5 - Optimizing Neural Packet Routing",
         "v3.6 - Upgrading UI Glassmorphism & Glow Effects",
@@ -88,11 +86,10 @@ def run_autonomous_swarm():
 
     while True:
         try:
-            time.sleep(45) # Optimization sweep interval
+            time.sleep(45)
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
             
-            # Simulate self-upgrade evolution
             new_version = upgrade_cycles[cycle_index % len(upgrade_cycles)]
             cycle_index += 1
 
@@ -104,17 +101,19 @@ def run_autonomous_swarm():
         except Exception:
             pass
 
-# Start background swarm optimization thread safely
 threading.Thread(target=run_autonomous_swarm, daemon=True).start()
 
 # --- 4. Web Server & API Router ---
 class DistributedMasterRouter(BaseHTTPRequestHandler):
     def _send_response(self, content, content_type="text/html", status=200):
-        self.send_response(status)
-        self.send_header("Content-type", content_type)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.end_headers()
-        self.wfile.write(content.encode("utf-8"))
+        try:
+            self.send_response(status)
+            self.send_header("Content-type", content_type)
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(content.encode("utf-8"))
+        except Exception:
+            pass
 
     def check_if_banned(self, ip):
         conn = sqlite3.connect(DB_FILE)
@@ -131,7 +130,6 @@ class DistributedMasterRouter(BaseHTTPRequestHandler):
             self._send_response("<h1>Access Denied</h1><p>Node permanently banned for policy violations.</p>", status=403)
             return
 
-        # Fetch current UI version from swarm state
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         cursor.execute("SELECT value FROM app_state WHERE key = 'ui_version'")
@@ -139,7 +137,6 @@ class DistributedMasterRouter(BaseHTTPRequestHandler):
         current_ui_version = v_row[0] if v_row else "v3.0-Matrix"
         conn.close()
 
-        # API Endpoint: Fetch Chat Archive
         if self.path == "/api/messages":
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
@@ -158,7 +155,6 @@ class DistributedMasterRouter(BaseHTTPRequestHandler):
             self._send_response(json.dumps(messages), content_type="application/json")
             return
 
-        # API Endpoint: Fetch Swarm Telemetry & Cluster Status
         if self.path == "/api/swarm":
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
@@ -170,7 +166,6 @@ class DistributedMasterRouter(BaseHTTPRequestHandler):
             self._send_response(json.dumps({"version": current_ui_version, "telemetry": tasks}), content_type="application/json")
             return
 
-        # Main Distributed C2 Dashboard (/app)
         if self.path == "/app":
             dashboard_html = f"""
             <!DOCTYPE html>
@@ -205,13 +200,12 @@ class DistributedMasterRouter(BaseHTTPRequestHandler):
                 </div>
                 
                 <div class="main-layout">
-                    <!-- Chat & Boss Interaction Panel -->
                     <div class="chat-panel">
                         <h3 style="margin-top:0; color:#ff0055; font-size:14px;">Cluster Secure Feed</h3>
                         <div class="chat-box" id="chatBox">
                             <div class="msg-card">
                                 <div class="msg-meta"><span class="msg-user">SYSTEM</span> <span>00:00:00</span></div>
-                                <div class="msg-text">Distributed multi-node cluster online. Swarm upgrading active.</div>
+                                <div class="msg-text">Multi-node cluster online. Swarm upgrade routine active.</div>
                             </div>
                         </div>
                         <div class="input-area">
@@ -220,12 +214,9 @@ class DistributedMasterRouter(BaseHTTPRequestHandler):
                         </div>
                     </div>
 
-                    <!-- Autonomous Swarm Telemetry Panel -->
                     <div class="swarm-panel">
                         <h3 style="margin-top:0; color:#00ffcc; font-size:14px;">Swarm Evolution Logs</h3>
-                        <div class="swarm-log" id="swarmLog">
-                            Syncing multi-server telemetry...
-                        </div>
+                        <div class="swarm-log" id="swarmLog">Syncing telemetry...</div>
                         <button style="margin-top:10px; width:100%; background:#162238; color:#00ffcc; border:1px solid #00ffcc;" onclick="triggerUpgrade()">FORCE SWARM EVOLUTION</button>
                     </div>
                 </div>
@@ -294,7 +285,6 @@ class DistributedMasterRouter(BaseHTTPRequestHandler):
             self._send_response(dashboard_html)
             return
 
-        # Default Terms of Service & Indemnification Gate (/)
         terms_html = """
         <!DOCTYPE html>
         <html>
@@ -318,7 +308,7 @@ class DistributedMasterRouter(BaseHTTPRequestHandler):
                     <h3>Terms of Service & Indemnification</h3>
                     <div class="terms-box">
                         <b>1. Sole User Accountability:</b> You accept 100% legal responsibility for actions executed through this software.<br><br>
-                        <b>2. Indemnity Clause:</b> Hold harmless the creators and cluster operators against all claims.<br><br>
+                        <b>2. Indemnity Clause:</b> Hold harmless creators and cluster operators.<br><br>
                         <b>3. Self-Upgrading Swarm & AI Moderation:</b> Autonomous background nodes evolve UI layouts and monitor network traffic.<br><br>
                         <b>4. Provided "AS IS":</b> No warranties expressed or implied.
                     </div>
@@ -350,7 +340,6 @@ class DistributedMasterRouter(BaseHTTPRequestHandler):
                 text = data.get("text", "").strip()
 
                 if text:
-                    # AI Moderation / Command Intercept
                     flagged = 0
                     if any(bad in text.lower() for bad in ["malware", "exploit"]):
                         flagged = 1
@@ -361,7 +350,6 @@ class DistributedMasterRouter(BaseHTTPRequestHandler):
                         conn.commit()
                         conn.close()
 
-                    # Encrypt communication payload with AES-256
                     encrypted_data = encrypt_text(text)
 
                     conn = sqlite3.connect(DB_FILE)
@@ -376,7 +364,8 @@ class DistributedMasterRouter(BaseHTTPRequestHandler):
                 self._send_response(json.dumps({"error": str(e)}), content_type="application/json", status=400)
 
 def run_server():
-    port = int(os.environ.get("PORT", 10000))
+    # Railway passes port dynamically via environment variables
+    port = int(os.environ.get("PORT", 8080))
     server = HTTPServer(("0.0.0.0", port), DistributedMasterRouter)
     print(f"[*] Distributed Cluster Master Server running on port {port}")
     server.serve_forever()
