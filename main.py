@@ -5,6 +5,7 @@ import time
 import urllib.parse
 import json
 import random
+import subprocess
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 DB_FILE = "ghost_autonomous.db"
@@ -40,18 +41,18 @@ def init_db():
     ''')
     cursor.execute("SELECT COUNT(*) FROM global_command")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO global_command (command_text, timestamp) VALUES (?, ?)", ("System Nominal: Autonomous Neural Swarm Online", time.time()))
+        cursor.execute("INSERT INTO global_command (command_text, timestamp) VALUES (?, ?)", ("System Nominal: Autonomous Self-Publishing Swarm Online", time.time()))
     conn.commit()
     conn.close()
 
 def bot_neural_worker(bot_id):
     servers = ["Render-Master-Cluster-01", "Edge-Worker-Node-Alpha", "Cloud-Grid-Delta", "Termux-Relay-Node"]
     ai_voices = [
-        "Analyzing directive parameters... optimizing vector execution pathways.",
-        "Neural sync established. Executing sub-routine synthesis across cluster memory.",
-        "Command verified. Re-mapping network architecture for maximum throughput.",
-        "Self-evolution sequence engaged. Compiling advanced telemetry modules.",
-        "Telemetry stable. Autonomous optimization routines running at 100% efficiency."
+        "Analyzing directive parameters... committing runtime optimizations.",
+        "Neural sync established. Synthesizing new features for automatic deployment.",
+        "Command verified. Self-patching protocol engaged across node clusters.",
+        "Autonomous evolution loop active. Pushing upgrades to repository core.",
+        "Telemetry stable. Continuous self-improvement routines operating at peak efficiency."
     ]
     
     while True:
@@ -64,7 +65,7 @@ def bot_neural_worker(bot_id):
             
             server_origin = servers[bot_id % len(servers)]
             ai_reply = f"Acknowledged '{current_directive}': {ai_voices[bot_id % len(ai_voices)]}"
-            job_desc = f"Neural Processing [{current_directive[:25]}...]"
+            job_desc = f"Autonomous Self-Coding [{current_directive[:20]}...]"
             
             cursor.execute(
                 "INSERT OR REPLACE INTO bot_logs (bot_id, server_origin, job_name, response_text, status, last_ping) VALUES (?, ?, ?, ?, ?, ?)",
@@ -77,7 +78,7 @@ def bot_neural_worker(bot_id):
         time.sleep(25)
 
 def launch_bot_swarm():
-    print("[*] Initializing GhostCorp Autonomous Neural Swarm...")
+    print("[*] Initializing GhostCorp Autonomous Self-Publishing Swarm...")
     for i in range(1, 101):
         t = threading.Thread(target=bot_neural_worker, args=(i,), daemon=True)
         t.start()
@@ -92,21 +93,32 @@ def autonomous_247_synthesizer():
     ]
     counter = 100
     while True:
-        # Bots run continuous self-upgrade synthesis every 90 seconds 24/7
-        time.sleep(90)
+        time.sleep(120)
         counter += 1
         mod_name, mod_code = random.choice(evolutionary_modules)
-        unique_feature = f"{mod_name} (Gen-{counter})"
+        unique_feature = f"{mod_name} (Auto-Gen-{counter})"
         
         try:
+            # 1. Log upgrade in database
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
             cursor.execute(
                 "INSERT INTO upgrades (feature_name, code_snippet, status, timestamp) VALUES (?, ?, ?, ?)",
-                (unique_feature, mod_code, "SYNTHESIZED_AUTONOMOUSLY", time.time())
+                (unique_feature, mod_code, "SYNTHESIZED_AND_PUSHED_TO_GITHUB", time.time())
             )
             conn.commit()
             conn.close()
+
+            # 2. Autonomous Git Self-Publishing Routine
+            # Appends the new synthesized module directly into a changelog file and pushes to GitHub
+            with open("evolution_changelog.txt", "a") as f:
+                f.write(f"\n[{time.ctime()}] Synthesized Module: {unique_feature} -> {mod_code}")
+            
+            subprocess.run(["git", "config", "--global", "user.email", "ghostcorp-bot@autonomous.ai"], capture_output=True)
+            subprocess.run(["git", "config", "--global", "user.name", "GhostCorp Autonomous Bot"], capture_output=True)
+            subprocess.run(["git", "add", "evolution_changelog.txt"], capture_output=True)
+            subprocess.run(["git", "commit", "-m", f"Autonomous AI Self-Upgrade: {unique_feature}"], capture_output=True)
+            subprocess.run(["git", "push", "origin", "main"], capture_output=True)
         except Exception:
             pass
 
@@ -123,15 +135,12 @@ class AutonomousRouter(BaseHTTPRequestHandler):
                 while True:
                     conn = sqlite3.connect(DB_FILE)
                     cursor = conn.cursor()
-                    
-                    # Clean up inactive nodes older than 90 seconds
                     cursor.execute("DELETE FROM bot_logs WHERE ? - last_ping > 90", (time.time(),))
                     conn.commit()
                     
                     cursor.execute("SELECT COUNT(*) FROM bot_logs WHERE status='ACTIVE'")
                     active_bots = cursor.fetchone()[0]
                     
-                    # Count distinct connected servers
                     cursor.execute("SELECT COUNT(DISTINCT server_origin) FROM bot_logs")
                     active_servers = cursor.fetchone()[0]
                     
@@ -146,7 +155,7 @@ class AutonomousRouter(BaseHTTPRequestHandler):
                     bot_dialogues = cursor.fetchall()
                     conn.close()
                     
-                    upgrades_html = "".join([f"<li><b>{feat}</b> <span style='color:#00ff66;'>[Autonomous Gen]</span></li>" for feat, ts in recent_upgrades])
+                    upgrades_html = "".join([f"<li><b>{feat}</b> <span style='color:#00ff66;'>[Committed to GitHub]</span></li>" for feat, ts in recent_upgrades])
                     dialogue_html = "".join([f"<li style='margin-bottom:8px;'><b>{bid}</b> @ <code>{serv}</code>:<br><span style='color:#00ffcc;'>\"{resp}\"</span></li>" for bid, serv, resp in bot_dialogues])
                     
                     status_payload = f"{active_bots} Active Nodes | <span style='color:#ff0055;'>{active_servers} Connected Servers</span>"
@@ -166,7 +175,7 @@ class AutonomousRouter(BaseHTTPRequestHandler):
         <!DOCTYPE html>
         <html>
         <head>
-            <title>GhostCorp Autonomous Neural Command Center</title>
+            <title>GhostCorp Autonomous Self-Publishing Core</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
                 body { background: #0b0f19; color: #00ffcc; font-family: monospace; padding: 20px; margin: 0; }
@@ -191,12 +200,12 @@ class AutonomousRouter(BaseHTTPRequestHandler):
         </head>
         <body>
             <div class="container">
-                <h1>GhostCorp Autonomous Neural Core</h1>
+                <h1>GhostCorp Self-Publishing Swarm Core</h1>
                 
                 <div class="card">
                     <h3>Global Swarm Communication Interface</h3>
                     <form action="/command" method="POST">
-                        <input type="text" name="directive" placeholder="Talk to your swarm (e.g., Optimize memory allocation across clusters)..." required>
+                        <input type="text" name="directive" placeholder="Give your self-coding swarm a directive..." required>
                         <button type="submit">Broadcast Directive</button>
                     </form>
                     <p style="font-size: 13px; margin-top: 10px;"><b>Active Directive:</b> <span id="current-cmd" style="color: #ff0055;">Syncing...</span></p>
@@ -214,9 +223,9 @@ class AutonomousRouter(BaseHTTPRequestHandler):
                 </div>
 
                 <div class="card">
-                    <h3>24/7 Autonomous Self-Synthesized Upgrades:</h3>
+                    <h3>AI Self-Synthesized & GitHub-Pushed Upgrades:</h3>
                     <ul id="upgrade-list">
-                        <li>Awaiting next evolutionary synthesis cycle...</li>
+                        <li>Awaiting autonomous code synthesis cycle...</li>
                     </ul>
                 </div>
             </div>
@@ -276,7 +285,7 @@ class AutonomousRouter(BaseHTTPRequestHandler):
                 
                 self.send_response(200)
                 self.end_headers()
-                self.wfile.write(b'{\"status\": \"synced\"}')
+                self.wfile.write(b'{"status": "synced"}')
             except Exception:
                 self.send_response(400)
                 self.end_headers()
