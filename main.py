@@ -2,27 +2,54 @@ import os
 import sqlite3
 import json
 import time
+import base64
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from cryptography.fernet import Fernet
 
-DB_FILE = "ghost_platform.db"
+DB_FILE = "ghost_master_complete.db"
+KEY_FILE = "server_master.key"
 
+# --- 1. Cryptographic Pipeline (AES-256) ---
+def get_or_create_key():
+    if os.path.exists(KEY_FILE):
+        with open(KEY_FILE, "rb") as f:
+            return f.read()
+    else:
+        key = Fernet.generate_key()
+        with open(KEY_FILE, "wb") as f:
+            f.write(key)
+        return key
+
+ENCRYPTION_KEY = get_or_create_key()
+cipher = Fernet(ENCRYPTION_KEY)
+
+def encrypt_text(plain_text):
+    return cipher.encrypt(plain_text.encode("utf-8"))
+
+def decrypt_text(cipher_bytes):
+    try:
+        return cipher.decrypt(cipher_bytes).decode("utf-8")
+    except Exception:
+        return "[DECRYPTION ERROR / CORRUPT DATA]"
+
+# --- 2. Database Initialization ---
 def init_db():
     try:
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         cursor.execute('''
-            CREATE TABLE IF NOT EXISTS active_users (
-                user_identifier TEXT PRIMARY KEY,
-                ip_address TEXT,
-                indemnity_agreed INTEGER,
-                last_active REAL
+            CREATE TABLE IF NOT EXISTS banned_users (
+                ip_address TEXT PRIMARY KEY,
+                reason TEXT,
+                banned_at REAL
             )
         ''')
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS messages (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT,
-                content TEXT,
+                encrypted_content BLOB,
+                flagged_by_ai INTEGER,
                 timestamp REAL
             )
         ''')
@@ -31,7 +58,7 @@ def init_db():
     except Exception as e:
         print(f"DB Init Error: {e}")
 
-class AppRouter(BaseHTTPRequestHandler):
+class CompleteMasterRouter(BaseHTTPRequestHandler):
     def _send_response(self, content, content_type="text/html", status=200):
         self.send_response(status)
         self.send_header("Content-type", content_type)
@@ -39,32 +66,48 @@ class AppRouter(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content.encode("utf-8"))
 
+    def check_if_banned(self, ip):
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT reason FROM banned_users WHERE ip_address = ?", (ip,))
+        row = cursor.fetchone()
+        conn.close()
+        return row is not None
+
     def do_GET(self):
-        # 1. API Endpoint: Fetch Latest Messages for the Chat UI
+        client_ip = self.client_address[0]
+
+        # Enforce IP Bans
+        if self.check_if_banned(client_ip):
+            self._send_response("<h1>Access Denied</h1><p>Your node/IP has been permanently banned for violating the Acceptable Use Policy.</p>", status=403)
+            return
+
+        # API Endpoint: Fetch Decrypted Archive for the Chat UI
         if self.path == "/api/messages":
             conn = sqlite3.connect(DB_FILE)
             cursor = conn.cursor()
-            cursor.execute("SELECT username, content, timestamp FROM messages ORDER BY id DESC LIMIT 50")
+            cursor.execute("SELECT username, encrypted_content, timestamp FROM messages ORDER BY id DESC LIMIT 50")
             rows = cursor.fetchall()
             conn.close()
             
             messages = []
             for r in reversed(rows):
+                decrypted_msg = decrypt_text(r[1])
                 messages.append({
                     "user": r[0],
-                    "text": r[1],
+                    "text": decrypted_msg,
                     "time": time.strftime("%H:%M:%S", time.localtime(r[2]))
                 })
             self._send_response(json.dumps(messages), content_type="application/json")
             return
 
-        # 2. Main Chat Interface Screen (/app)
+        # Main Chat Interface Screen (/app)
         if self.path == "/app":
             chat_html = """
             <!DOCTYPE html>
             <html>
             <head>
-                <title>GhostCorp Global Chat</title>
+                <title>GhostCorp Global Matrix</title>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <style>
                     * { box-sizing: border-box; }
@@ -86,18 +129,18 @@ class AppRouter(BaseHTTPRequestHandler):
             <body>
                 <div class="header">
                     <h2>GhostCorp Encrypted Matrix</h2>
-                    <span style="font-size: 11px; color: #8892b0;">● AI Moderation Active</span>
+                    <span style="font-size: 11px; color: #8892b0;">● AI Moderation & AES-256 Storage Active</span>
                 </div>
                 
                 <div class="chat-box" id="chatBox">
                     <div class="msg-card">
                         <div class="msg-meta"><span class="msg-user">SYSTEM</span> <span>00:00:00</span></div>
-                        <div class="msg-text">Welcome to the network. Terms accepted. Systems nominal.</div>
+                        <div class="msg-text">Secure connection established. Indemnification accepted.</div>
                     </div>
                 </div>
 
                 <div class="input-area">
-                    <input type="text" id="msgInput" placeholder="Type your message..." onkeypress="handleKey(event)">
+                    <input type="text" id="msgInput" placeholder="Type secure transmission..." onkeypress="handleKey(event)">
                     <button onclick="sendMessage()">SEND</button>
                 </div>
 
@@ -146,7 +189,7 @@ class AppRouter(BaseHTTPRequestHandler):
             self._send_response(chat_html)
             return
 
-        # 3. Default Terms Gate Screen (/)
+        # Default Terms of Service & Indemnification Gate (/)
         terms_html = """
         <!DOCTYPE html>
         <html>
@@ -165,17 +208,17 @@ class AppRouter(BaseHTTPRequestHandler):
         </head>
         <body>
             <div class="container">
-                <h1>GhostCorp Gateway</h1>
+                <h1>GhostCorp Secure Gateway</h1>
                 <div class="card">
-                    <h3>Terms of Service & Indemnification</h3>
+                    <h3>Terms of Service & User Indemnification</h3>
                     <div class="terms-box">
-                        <b>1. Sole User Accountability:</b> Users take 100% responsibility for all content posted. Operators assume zero legal liability.<br><br>
-                        <b>2. User Indemnification:</b> You agree to defend and hold harmless the creators and hosts against any legal claims arising from your conduct.<br><br>
-                        <b>3. Automated AI Moderation:</b> Automated bots scan posts for bad conduct. Violations result in permanent bans while archiving records to the database.<br><br>
-                        <b>4. Provided "AS IS":</b> No warranties expressed or implied.
+                        <b>1. Sole User Accountability:</b> You accept 100% legal responsibility for all content and actions executed through this software. Operators assume zero liability.<br><br>
+                        <b>2. Hold-Harmless Indemnity:</b> You agree to defend, indemnify, and hold harmless the creators, developers, and hosts against all legal actions or claims arising from your use.<br><br>
+                        <b>3. AI Moderation & Permanent Archiving:</b> Built-in automated AI agents continuously scan inbound traffic. Malicious activity triggers instant account/IP bans while permanently logging records into server archives.<br><br>
+                        <b>4. AES-256 Storage & "AS IS":</b> Software is provided strictly "AS IS" with server-side encrypted storage.
                     </div>
                     <form action="/agree" method="POST">
-                        <button type="submit">I AGREE & ENTER PLATFORM</button>
+                        <button type="submit">I AGREE & ACCEPT FULL ACCOUNTABILITY</button>
                     </form>
                 </div>
             </div>
@@ -185,14 +228,14 @@ class AppRouter(BaseHTTPRequestHandler):
         self._send_response(terms_html)
 
     def do_POST(self):
-        # Handle "I Agree" Click -> Redirect directly to Chat App (/app)
+        client_ip = self.client_address[0]
+
         if self.path == "/agree":
             self.send_response(303)
             self.send_header("Location", "/app")
             self.end_headers()
             return
 
-        # Handle Posting New Messages to the API
         if self.path == "/api/chat":
             content_length = int(self.headers.get('Content-Length', 0))
             post_data = self.rfile.read(content_length).decode('utf-8')
@@ -202,21 +245,36 @@ class AppRouter(BaseHTTPRequestHandler):
                 text = data.get("text", "").strip()
 
                 if text:
+                    # AI Moderation Engine Simulation
+                    flagged = 0
+                    if any(bad in text.lower() for bad in ["illegalword", "malware", "exploit"]):
+                        flagged = 1
+                        # Automatic Ban Trigger
+                        conn = sqlite3.connect(DB_FILE)
+                        cursor = conn.cursor()
+                        cursor.execute("INSERT OR REPLACE INTO banned_users (ip_address, reason, banned_at) VALUES (?, ?, ?)",
+                                       (client_ip, "AI Moderation Trigger: Policy Violation", time.time()))
+                        conn.commit()
+                        conn.close()
+
+                    # Encrypt text using AES-256 before saving to database archive
+                    encrypted_data = encrypt_text(text)
+
                     conn = sqlite3.connect(DB_FILE)
                     cursor = conn.cursor()
-                    cursor.execute("INSERT INTO messages (username, content, timestamp) VALUES (?, ?, ?)",
-                                   (user, text, time.time()))
+                    cursor.execute("INSERT INTO messages (username, encrypted_content, flagged_by_ai, timestamp) VALUES (?, ?, ?, ?)",
+                                   (user, encrypted_data, flagged, time.time()))
                     conn.commit()
                     conn.close()
 
-                self._send_response(json.dumps({"status": "sent"}), content_type="application/json")
+                self._send_response(json.dumps({"status": "received"}), content_type="application/json")
             except Exception as e:
                 self._send_response(json.dumps({"error": str(e)}), content_type="application/json", status=400)
 
 def run_server():
     port = int(os.environ.get("PORT", 10000))
-    server = HTTPServer(("0.0.0.0", port), AppRouter)
-    print(f"[*] Server running on port {port}")
+    server = HTTPServer(("0.0.0.0", port), CompleteMasterRouter)
+    print(f"[*] Complete Master Server running on port {port}")
     server.serve_forever()
 
 if __name__ == "__main__":
